@@ -3,7 +3,7 @@ name: d2-diagram
 description: Draw architecture, dependency, class, network and flow diagrams as D2 source rendered to PNG. Use when asked to draw, diagram, visualize or map anything structural — infrastructure (Terraform layers, EKS/VPC topology, Kubernetes workloads, CI pipelines, request paths) as well as code (module and import graphs, class relations, call flows, data models, state machines) — when a diagram must live in git next to the code, or when Mermaid output looks too crude for the destination. Also use to redraw an existing Mermaid or Graphviz dot source at higher quality.
 license: MIT
 metadata:
-  version: "1.0"
+  version: "0.1.0"
   base: adapted from github.com/fmind/dotfiles/tree/main/skills/d2 (MIT)
 ---
 

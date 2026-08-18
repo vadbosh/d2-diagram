@@ -78,6 +78,25 @@ Check the aspect ratio of what you produced. A README column is about 900 px, so
 anything past roughly 2:1 renders as an unreadable strip. Flipping `direction:`
 between `right` and `down` usually fixes it in one word.
 
+## Releasing
+
+Three places record a version and each drifts on its own: `version:` inside
+`skill/SKILL.md` is what ships, `CHANGELOG.md` is what a reader looks at, and a
+git tag is what `git checkout v0.1.0` needs.
+
+```bash
+./release.sh check     # do the three agree?
+./release.sh tag       # create the missing tag for the current version
+git push origin v0.1.0
+```
+
+`check` also fails when the tag exists but points somewhere other than `HEAD` —
+that means the tag was made and work continued without a version bump. Both
+halves look fine alone; only the comparison shows it.
+
+This is not hypothetical: the first release shipped with `1.0` in the skill and
+`0.1.0` in the changelog, and nothing complained.
+
 ## Adding to the skill
 
 `skill/SKILL.md` is loaded into an assistant's context on every trigger, so its
