@@ -161,6 +161,7 @@ docs/diagrams/
 | [docs/install.en.md](docs/install.en.md) | installing, flags, verifying, removing |
 | [docs/design.en.md](docs/design.en.md) | why D2, why PNG, and what D2 cannot draw |
 | [docs/patterns.en.md](docs/patterns.en.md) | recipes for infrastructure, code and data models, plus the traps |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | language, commit style, and the four rules specific to this repository |
 
 ## Tests
 

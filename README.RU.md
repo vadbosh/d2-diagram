@@ -163,6 +163,7 @@ docs/diagrams/
 | [docs/install.ru.md](docs/install.ru.md) | установка, флаги, проверка, удаление |
 | [docs/design.ru.md](docs/design.ru.md) | почему D2, почему PNG и чего D2 не умеет |
 | [docs/patterns.ru.md](docs/patterns.ru.md) | рецепты для инфраструктуры, кода и моделей данных, плюс ловушки |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | язык, стиль коммитов и четыре правила, специфичных для этого репозитория |
 
 ## Тесты
 
