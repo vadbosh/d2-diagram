@@ -1,7 +1,17 @@
 # d2-diagram
 
-**In one line:** you ask your AI assistant for a diagram, and get a 40-line `.d2`
-source plus a `.png`, both committed next to the code they describe.
+You ask your AI assistant for a diagram. It reads the code and writes a `.d2` —
+a text source of forty-odd lines — and one command turns that into a `.png`.
+Both files sit in the repository next to the code they describe.
+
+That is the point of the text file. When the code changes, the diagram is not
+redrawn from scratch: a few lines of `.d2` change, the picture is re-rendered
+with one command, and both go in the same commit as the code. Asking the
+assistant to update it costs a sentence.
+
+It does not happen by itself. Nothing watches the code, and a `.png` that nobody
+re-rendered is the one failure this setup still allows — it is just cheap to fix
+instead of expensive.
 
 | Point it at | Ask for | You get |
 |---|---|---|
