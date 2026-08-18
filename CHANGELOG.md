@@ -1,5 +1,72 @@
 # Changelog
 
+## 0.2.0 — 2026-08-18
+
+The release that stopped taking its own word for things. Every capability the
+documentation described was run, and the ones that could not be run are now
+labelled as such instead of reading like experience.
+
+### Added
+
+- **`release.sh`** — one command that checks the three records of a version
+  against each other: `version:` in the skill, the section in this changelog,
+  and the git tag. It found the first bug it was written for: the skill shipped
+  `1.0` while the changelog announced `0.1.0`.
+- **`D2_MIRRORS`** — a colon-separated list of directories holding a copy of the
+  skill that `install.sh` does not write, such as a config canon that
+  redistributes it. `release.sh check` compares them and fails on a stale one.
+- **Homebrew on macOS.** The installer now prefers `brew install d2` when it
+  finds brew, because the formula carries 0.8.1 against the newest GitHub
+  release of 0.7.1 — upstream tagged v0.8.1 without attaching binaries.
+- **`uninstall.sh --skills-dir`**, matching the installer. Being able to put a
+  skill somewhere and not take it away was a worse deal than having no flag.
+- **A gallery of four diagrams** with source and picture side by side —
+  Terraform roots, a Kubernetes request path, a TypeScript package graph, and
+  types drawn against the tables behind them.
+- **`CONTRIBUTING.md`**, whose fourth section is the reason it exists: the four
+  rules of this repository that are easy to break without knowing.
+
+### Changed
+
+- **The README leads with Install and Use.** A reader who has just landed wants
+  to run it, not to read its design principles.
+- **Prompts a person would type**, replacing prose that described what to ask
+  for. Terraform gets its own section, because there the graph already exists
+  and nobody should be reading `.tf` files by eye to draw it.
+
+### Verified, and written down as measured
+
+- **Every shape 0.7.1 accepts**, tested one at a time. `triangle` is not one:
+  it is an arrowhead value only.
+- **Multi-board files write a directory**, `out/index.svg` plus
+  `out/scenarios/<name>.svg`, not the single file the rest of the skill assumes.
+- **`terraform graph`** run on a nine-line provider-free module, its DOT output
+  reproduced in the README so any reader can repeat it without a cloud account.
+- **The dependency extractors installed and pointed at real code.** madge read a
+  TypeScript project — 541 modules, 1129 edges — while dependency-cruiser,
+  installed globally, returned `"modules": []` for the same project and asked to
+  be a local devDependency; it handled plain JavaScript correctly. `pydeps`
+  wants a path, not a module name. `pyreverse` writes two `.dot` files into the
+  working directory rather than to stdout.
+- **The macOS archives exist** — all four release tarballs answer HTTP 200 — and
+  the installer's fallback was exercised by faking a Darwin host with a failing
+  brew, which also proved the "wrong build for this machine" guard.
+
+### Corrected
+
+- **`inframap` was recommended and never used.** Replaced with `terraform state
+  list` and `terraform show -json`, which ship with Terraform and were run here.
+  It survives as one line marked as a pointer to a third-party tool.
+- **The custom-font flags do nothing visible on 0.7.1.** There are eight of them,
+  not four; a missing path is rejected, but a valid TTF — two of them, by flag
+  and by environment variable — rendered a byte-identical SVG. Treat a custom
+  family as unavailable until verified on your own build.
+- **Terms used without explanation**: `dagre` and `elk` are the two layout
+  engines inside the binary, `foreignObject` is the SVG element that embeds
+  HTML, `viewBox` is where D2 records the canvas size.
+- **macOS is no longer claimed as tested.** The binaries exist and the installer
+  has a code path; nobody has run it on a Mac.
+
 ## 0.1.0 — 2026-08-18
 
 First release. Everything here came out of one working session — diagramming a
