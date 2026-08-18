@@ -38,9 +38,12 @@ records the failure behind the change is worth more than a tidy summary; look at
 ## Before a pull request
 
 ```bash
-./tests/test_render.sh                                  # every example compiles and holds its rules
-shellcheck install.sh uninstall.sh tests/test_render.sh  # no findings
+./tests/test_render.sh    # gallery is current, every example compiles, rules hold
+./render.sh --check       # the same staleness check on its own, no d2 needed
+shellcheck install.sh uninstall.sh release.sh render.sh tests/test_render.sh
 ```
+
+CI runs all three on every push and pull request.
 
 `test_render.sh` skips itself when `d2` is absent — a skipped suite is not a
 passing suite, so install the binary before claiming the tests pass.
@@ -69,7 +72,13 @@ skill. Both have happened on real machines. Put copies in
 
 ## Changing a diagram
 
-Edit the `.d2`, re-render, and look at the picture before pushing it. A layout
+Edit the `.d2`, then run `./render.sh` — it rebuilds every gallery picture and
+records in `examples/.rendered` which source each was built from. The test suite
+compares those hashes, so a `.d2` committed without its picture fails CI rather
+than reaching a reader. `./render.sh --check` answers the same question without
+rendering anything, and needs neither d2 nor a browser.
+
+Look at the picture before pushing it. A layout
 engine produces surprising results from correct sources, and `d2` leaves a
 partial file behind when it fails — so trust the exit code, not the presence of
 output.
@@ -90,9 +99,9 @@ git tag is what `git checkout v0.1.0` needs.
 git push origin v0.1.0
 ```
 
-`check` also fails when the tag exists but points somewhere other than `HEAD` —
-that means the tag was made and work continued without a version bump. Both
-halves look fine alone; only the comparison shows it.
+`check` also counts the commits made since the tag and says how many are
+unreleased. That is a fact, not a failure: work continuing after a release is
+normal, and a check that is always red stops being read.
 
 This is not hypothetical: the first release shipped with `1.0` in the skill and
 `0.1.0` in the changelog, and nothing complained.

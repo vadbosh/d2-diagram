@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # d2 is not installed here on purpose. The suite skips what it cannot run
+      # and still enforces the check that matters most in review: that no .d2 was
+      # changed without re-rendering its picture. That check compares recorded
+      # hashes, so it needs no binary at all.
+      - name: Tests
+        run: ./tests/test_render.sh
+
+      - name: Gallery is current
+        run: ./render.sh --check
+
+      - name: Shell scripts
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          shellcheck install.sh uninstall.sh release.sh render.sh tests/test_render.sh
+
+      - name: Version, changelog and tag agree
+        run: ./release.sh check || [ $? -eq 3 ]

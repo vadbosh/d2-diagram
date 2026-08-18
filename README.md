@@ -271,7 +271,32 @@ Mark the queue orange, that is the part being replaced.
 Add the worker service, it reads the same database.
 ```
 
-**5. Put it in your README.**
+**5. When the code moves on, ask for a re-render.**
+
+Nothing watches the repository, so this is the step that keeps the picture true.
+Say which diagram and what changed — the assistant re-reads the code, edits the
+`.d2` and rebuilds the `.png`:
+
+```
+The code has moved on — re-read src/ and update docs/diagrams/architecture.d2,
+then re-render the PNG.
+
+I added a worker service that reads the same database. Put it on the diagram
+and rebuild the picture.
+
+Check docs/diagrams/*.d2 against the current code and tell me which ones are
+now wrong before changing anything.
+```
+
+That last one is worth using before a release: it asks for an audit rather than
+an edit, so you find out what drifted without also finding out what the
+assistant decided to redraw.
+
+In this repository the equivalent is one command, `./render.sh`, which rebuilds
+every gallery picture and stamps `examples/.rendered` so the test suite can tell
+when a source changed without its picture.
+
+**6. Put it in your README.**
 
 ```markdown
 [![Architecture](docs/diagrams/architecture.png)](docs/diagrams/architecture.png)
@@ -368,9 +393,11 @@ a domain type and its column shows up.
 ./tests/test_render.sh
 ```
 
-Compiles every shipped example, asserts none of them produces a
-`<foreignObject>`, validates the theme, and checks that every style class the
-skill documents actually exists. Skips cleanly when `d2` is absent.
+Checks first that every gallery picture matches the source it was built from —
+that one needs neither d2 nor a browser, so it runs anywhere. Then compiles every
+shipped example, asserts none produces a `<foreignObject>`, validates the theme,
+and checks that every style class the skill documents exists. Skips the rendering
+half cleanly when `d2` is absent.
 
 ## License
 

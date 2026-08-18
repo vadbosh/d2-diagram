@@ -19,9 +19,20 @@ FAIL=0
 ok() { PASS=$((PASS + 1)); printf 'ok   %s\n' "$*"; }
 no() { FAIL=$((FAIL + 1)); printf 'FAIL %s\n' "$*"; }
 
+# 0. The gallery pictures match the sources they were built from. This one needs
+#    neither d2 nor a browser — it compares recorded hashes — so it runs even
+#    where nothing can be rendered, which is exactly the case in CI.
+if "$SRC/render.sh" --check >/dev/null 2>&1; then
+	ok "gallery pictures match their sources"
+else
+	no "gallery is out of date — run ./render.sh"
+	"$SRC/render.sh" --check 2>&1 | sed 's/^/     /'
+fi
+
 if ! command -v d2 >/dev/null 2>&1; then
-	echo "d2 not on PATH — skipping the render suite"
-	exit 0
+	printf '\nd2 not on PATH — skipping the render suite (%s passed so far)\n' "$PASS"
+	[ "$FAIL" -eq 0 ]
+	exit
 fi
 
 # 1. Every shipped example compiles — both the skill references and the gallery.
