@@ -38,8 +38,20 @@ public.alb -> private.eks: ":8080"
 private.eks -> private.rds: ":5432"
 ```
 
-Coordinates are not your problem — `dagre` or `elk` computes them. The pull
-request shows `+ rds: RDS Postgres`, not a wall of coordinates.
+Coordinates are not your problem. D2 hands the graph to a layout engine, and
+both engines it can use are inside the binary already — nothing extra to
+install:
+
+```console
+$ d2 layout
+dagre (bundled) - The directed graph layout library Dagre
+elk (bundled) - Eclipse Layout Kernel (ELK) with the Layered algorithm.
+```
+
+Dagre is the default and suits trees and flows; ELK, from the Eclipse project,
+handles layered infrastructure better. Switch with `--layout=elk` or a line in
+the file. Either way the pull request shows `+ rds: RDS Postgres`, not a wall of
+coordinates.
 
 ## Install
 

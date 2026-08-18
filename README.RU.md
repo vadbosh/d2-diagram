@@ -39,7 +39,18 @@ public.alb -> private.eks: ":8080"
 private.eks -> private.rds: ":5432"
 ```
 
-Координаты — не твоя забота, их считает `dagre` или `elk`. В pull request видно
+Координаты — не твоя забота. D2 отдаёт граф движку раскладки, и оба движка,
+которые он умеет использовать, уже лежат внутри бинарника — ставить нечего:
+
+```console
+$ d2 layout
+dagre (bundled) - The directed graph layout library Dagre
+elk (bundled) - Eclipse Layout Kernel (ELK) with the Layered algorithm.
+```
+
+Dagre стоит по умолчанию и хорош на деревьях и потоках; ELK, из проекта Eclipse,
+лучше справляется со слоёной инфраструктурой. Переключается флагом
+`--layout=elk` или строкой в файле. В любом случае в pull request видно
 `+ rds: RDS Postgres`, а не стену чисел.
 
 ## Установка

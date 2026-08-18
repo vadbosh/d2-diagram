@@ -10,7 +10,9 @@ metadata:
 # D2 diagrams
 
 D2 is a diagram scripting language: text in, picture out, layout computed by the engine.
-Never place coordinates by hand — describe containment and edges, let `dagre`/`elk` solve it.
+Never place coordinates by hand — describe containment and edges, let the layout engine solve it.
+Both engines ship inside the binary: `dagre` (the Dagre directed-graph library, the default) and
+`elk` (Eclipse Layout Kernel, layered algorithm). `d2 layout` prints them.
 
 **Two files per diagram, and only two: `<name>.d2` and `<name>.png`.** SVG is never a deliverable
 here and never gets committed — see [What ships](#what-ships) before rendering anything.
