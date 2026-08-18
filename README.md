@@ -142,17 +142,77 @@ Details, flags and verification: [docs/install.en.md](docs/install.en.md).
 
 ## Use
 
-Nothing to invoke — the skill triggers on the request. "Draw the architecture of
-this module", "map the imports in `src/`", "diagram the request path" all reach
-it. It reads the actual source before drawing, writes `<name>.d2`, renders
-`<name>.png`, and shows you the picture.
+There is nothing to invoke. Start a new session in the repository you want
+drawn, and ask in plain words — the skill triggers on the request itself.
+
+**1. Open the assistant where the code is.**
+
+```bash
+cd ~/work/my-service
+claude          # or: opencode / codex
+```
+
+**2. Ask for the diagram, and say what it should answer.**
+
+That second half is what separates a useful diagram from a box collage. Compare
+"draw the architecture" with "show which services talk to the database, and
+which of those calls go through the cache" — the first invites everything, the
+second has an answer that can be right or wrong.
+
+Prompts that work as written:
+
+```
+Read this repository and draw the architecture: what runs where, and what
+talks to what. Put it in docs/diagrams/.
+
+Map the imports between packages in src/ — I want to see whether there are
+cycles. Extract the edges with a dependency tool, do not guess them.
+
+Draw the path of an HTTP request from the load balancer to the database,
+with the conditions each hop needs.
+
+Diagram the data model: the TypeScript types on one side, the Postgres tables
+on the other, so I can see where they disagree.
+
+Redraw this Mermaid block as a D2 diagram and put it in docs/diagrams/.
+```
+
+**3. What the assistant does.**
+
+It reads the real source first — `.tf` files, imports, manifests, migrations —
+rather than recalling what a project of that shape usually looks like. Then it
+writes the source, renders the picture, and shows it to you:
 
 ```
 docs/diagrams/
-├── theme.d2            shared colors and line styles
-├── cluster.d2          the source — this is what you edit and review
-└── cluster.png         what the README links to
+├── theme.d2            shared colors and line styles, imported by the rest
+├── architecture.d2     the source — this is what you edit and review
+└── architecture.png    what the README links to
 ```
+
+**4. Iterate in words, not in a graphics editor.**
+
+The source is forty lines, so corrections are cheap and specific:
+
+```
+Too wide for a README — make it vertical.
+Drop the IAM roles, they add nothing here.
+Mark the queue orange, that is the part being replaced.
+Add the worker service, it reads the same database.
+```
+
+**5. Put it in your README.**
+
+```markdown
+[![Architecture](docs/diagrams/architecture.png)](docs/diagrams/architecture.png)
+```
+
+Wrapped in a link to itself so a click opens it at full size — GitHub will not
+open an SVG file page, which is why the committed picture is a PNG.
+
+Ask the assistant to re-render after any change to the `.d2`; the source and the
+picture are committed together, and a stale PNG is the one failure this setup
+still allows.
 
 ## Documentation
 
