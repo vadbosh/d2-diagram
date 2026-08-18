@@ -123,8 +123,8 @@ deployed. Say so in the prompt and the diagram stops being an interpretation:
 ```
 Build the diagram from `terraform graph` rather than from reading the files.
 
-Take the real deployment from the state, not from the configuration:
-run `inframap generate terraform.tfstate` and draw that.
+Draw what is actually deployed, not what the configuration says: take the
+resources from `terraform state list` and `terraform show -json`.
 
 Draw how the root modules depend on each other — the edges are the
 `terraform_remote_state` blocks, one per cross-root read.
@@ -132,8 +132,9 @@ Draw how the root modules depend on each other — the edges are the
 
 - `terraform graph` — the dependency graph "between different objects in the
   current configuration and state", printed as DOT.
-- `inframap generate <tfstate>` — a provider-aware graph of what is actually in
-  the state, which is a different question from what the code says.
+- `terraform state list` and `terraform show -json` — what the state actually
+  holds, which is a different question from what the configuration says. Both
+  ship with Terraform; no extra tool to install.
 - `terraform_remote_state` blocks — in a layered repository these *are* the
   edges between root modules, and grepping them is exact where recollection is
   not.

@@ -32,8 +32,13 @@ Each emits JSON or dot; convert the edges into D2 lines and let the engine lay
 them out.
 
 **Live infrastructure.** When the question is "what is actually deployed" rather
-than "what does the code say", start from state: `inframap generate <tfstate>`
-produces a graph, which can then be redrawn in D2 for readability.
+than "what does the code say", start from the state — `terraform state list` for
+the inventory, `terraform show -json` for the attributes and the dependency
+edges between resources. Both ship with Terraform.
+
+Third-party tools such as `inframap` render a provider-aware graph straight from
+a tfstate. They may suit you; they were not used to build anything in this
+repository, so treat that as a pointer rather than a recommendation.
 
 ## Cutting nodes
 

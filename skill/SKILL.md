@@ -24,7 +24,7 @@ here and never gets committed — see [What ships](#what-ships) before rendering
 | Diagram lives in git, changes with the code, destination is GitHub README/PR | **D2** |
 | Must render natively inside a GitLab MR comment or issue body | Mermaid (` ```mermaid `), GitLab bundles mermaid 11.13 + layout-elk |
 | One-off editorial figure for a client deck or a marketing page | `diagram-design` skill, if installed |
-| Graph must be derived from real state, not from reading code | `inframap generate <tfstate> \| dot -Tsvg`, then optionally redraw in D2 |
+| Graph must be derived from real state, not from reading code | `terraform state list` + `terraform show -json`, then draw that |
 
 D2 when the diagram is a maintained artifact. Mermaid when the renderer is not yours.
 
