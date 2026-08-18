@@ -1,5 +1,21 @@
 # d2-diagram
 
+**In one line:** you ask your AI assistant for a diagram, and get a 40-line `.d2`
+source plus a `.png`, both committed next to the code they describe.
+
+| Use it for | Not for |
+|---|---|
+| architecture — what runs where, what calls what | bar, line, scatter, Gantt — no axes in D2 |
+| module and import graphs, cycles between packages | Venn, pyramid, funnel, radar, treemap |
+| request paths, with the condition each hop needs | a one-off pretty figure for a slide deck |
+| classes, data models, code against its tables | anything positioned by coordinate or area |
+| Terraform layers, Kubernetes topology, CI flows | |
+
+If the picture has to live in git and change with the code, this is the tool. If
+it has to be pretty once, it is not.
+
+---
+
 Ask an assistant for an architecture diagram and you usually get one of two
 things: a Mermaid block that renders but looks like every other Mermaid block, or
 several hundred lines of hand-placed SVG that nobody will ever edit again.
