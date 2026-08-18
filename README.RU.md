@@ -132,16 +132,55 @@ claude          # или: opencode / codex
 `terraform_remote_state`, по одному на каждое чтение чужого состояния.
 ```
 
-- `terraform graph` — граф зависимостей «между объектами текущей конфигурации и
-  состояния», печатается в формате DOT.
-- `terraform state list` и `terraform show -json` — что на самом деле лежит в
-  состоянии; это другой вопрос, чем «что написано в конфигурации». Оба идут в
-  составе Terraform, ставить нечего.
-- блоки `terraform_remote_state` — в слоёном репозитории они и **есть** рёбра
-  между корневыми модулями, и найти их грепом точнее, чем вспомнить.
+Откуда это берётся и что печатает на самом деле — первое воспроизводится в любом
+временном каталоге, ни облачного аккаунта, ни провайдера не нужно:
 
-Ассистент переводит в D2 то, на что ты его направишь, и раскладывает. Его вклад
-поверх сырого вывода `dot` — читаемость, а не сам граф.
+```hcl
+# /tmp/tf-demo/main.tf
+resource "terraform_data" "network" { input = "vpc" }
+
+resource "terraform_data" "cluster" {
+  input      = "eks"
+  depends_on = [terraform_data.network]
+}
+
+resource "terraform_data" "workload" {
+  input      = terraform_data.cluster.output
+  depends_on = [terraform_data.cluster]
+}
+```
+
+```console
+$ terraform init && terraform graph
+digraph G {
+  rankdir = "RL";
+  node [shape = rect, fontname = "sans-serif"];
+  "terraform_data.cluster" [label="terraform_data.cluster"];
+  "terraform_data.network" [label="terraform_data.network"];
+  "terraform_data.workload" [label="terraform_data.workload"];
+  "terraform_data.cluster" -> "terraform_data.network";
+  "terraform_data.workload" -> "terraform_data.cluster";
+}
+```
+
+Это и есть весь вход, нужный для схемы: узлы и рёбра, уже правильные, без чьего-либо
+толкования `.tf`. Отдай это и попроси картинку.
+
+`terraform state list` и `terraform show -json` отвечают на другой вопрос — что
+лежит в состоянии, а не что написано в конфигурации. Им нужен каталог с
+инициализированным бэкендом, поэтому самодостаточного примера здесь нет: при
+написании этого текста обе команды запускались на живом модуле и вернули перечень
+ресурсов и полный JSON, но тот вывод — чья-то инфраструктура, и он не приводится.
+
+Блоки `terraform_remote_state` — это рёбра между корневыми модулями в слоёном
+репозитории. Это не общее рассуждение, а то, как собран пример из поставки: в
+[`examples/cluster-layers.d2`](examples/cluster-layers.d2) по одному ребру на
+каждый блок, найденный грепом из
+[docs/patterns.ru.md](docs/patterns.ru.md#рёбра-берутся-из-кода-а-не-из-памяти).
+
+Вклад скилла поверх любого из этих источников — читаемость, а не сам граф. Первый
+пример нарисует и `dot`; он только не сгруппирует по корневым модулям, не отметит
+то единственное, что сейчас заменяется, и не уложится в колонку README.
 
 **3. Что делает ассистент.**
 

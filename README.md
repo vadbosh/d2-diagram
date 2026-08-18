@@ -131,17 +131,56 @@ Draw how the root modules depend on each other — the edges are the
 `terraform_remote_state` blocks, one per cross-root read.
 ```
 
-- `terraform graph` — the dependency graph "between different objects in the
-  current configuration and state", printed as DOT.
-- `terraform state list` and `terraform show -json` — what the state actually
-  holds, which is a different question from what the configuration says. Both
-  ship with Terraform; no extra tool to install.
-- `terraform_remote_state` blocks — in a layered repository these *are* the
-  edges between root modules, and grepping them is exact where recollection is
-  not.
+Where those come from, and what they actually print — reproduce the first one in
+a scratch directory, it needs no cloud account and no provider:
 
-The assistant converts whichever of those you point it at into D2 and lays it
-out. The value it adds over raw `dot` output is readability, not the graph.
+```hcl
+# /tmp/tf-demo/main.tf
+resource "terraform_data" "network" { input = "vpc" }
+
+resource "terraform_data" "cluster" {
+  input      = "eks"
+  depends_on = [terraform_data.network]
+}
+
+resource "terraform_data" "workload" {
+  input      = terraform_data.cluster.output
+  depends_on = [terraform_data.cluster]
+}
+```
+
+```console
+$ terraform init && terraform graph
+digraph G {
+  rankdir = "RL";
+  node [shape = rect, fontname = "sans-serif"];
+  "terraform_data.cluster" [label="terraform_data.cluster"];
+  "terraform_data.network" [label="terraform_data.network"];
+  "terraform_data.workload" [label="terraform_data.workload"];
+  "terraform_data.cluster" -> "terraform_data.network";
+  "terraform_data.workload" -> "terraform_data.cluster";
+}
+```
+
+That is the whole input a diagram needs: nodes and edges, already correct,
+without anyone interpreting `.tf` files. Hand it over and ask for a picture.
+
+`terraform state list` and `terraform show -json` answer the other question —
+what is in the state rather than what the configuration says. They need a
+directory with an initialised backend, so there is no self-contained demo here;
+they were run against a live module while writing this and returned the resource
+inventory and the full JSON, but that output is somebody's infrastructure and is
+not reproduced.
+
+`terraform_remote_state` blocks are the edges between root modules in a layered
+repository. That is not a general claim — it is how the shipped example was
+built: [`examples/cluster-layers.d2`](examples/cluster-layers.d2) has one edge
+per block found by the grep in
+[docs/patterns.en.md](docs/patterns.en.md#getting-the-edges-from-the-code-not-from-memory).
+
+What the skill adds on top of any of these is readability, not the graph. `dot`
+already draws the first example; it does not group by root module, mark the one
+thing being replaced, or fit a README column.
 
 **3. What the assistant does.**
 

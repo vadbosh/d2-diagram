@@ -4,6 +4,7 @@
 #   ./uninstall.sh                remove from every assistant that has it
 #   ./uninstall.sh --dry-run      print what would happen, change nothing
 #   ./uninstall.sh --ide claude   remove from one assistant only
+#   ./uninstall.sh --skills-dir D remove from D instead of the detected location
 #   ./uninstall.sh --purge        also delete the backups under ~/.local/state/d2-skill-backups
 #
 # The d2 binary is left alone: this script did not install it.
@@ -13,16 +14,18 @@ BACKUP_ROOT="${D2_SKILL_BACKUP_DIR:-$HOME/.local/state/d2-skill-backups}"
 
 DRY_RUN=0
 ONLY_IDE=""
+SKILLS_DIR=""
 PURGE=0
 
 usage() {
-	sed -n '2,10p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+	sed -n '2,11p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 while [ $# -gt 0 ]; do
 	case "$1" in
 		--dry-run) DRY_RUN=1 ;;
 		--ide) ONLY_IDE="${2:-}"; shift ;;
+		--skills-dir) SKILLS_DIR="${2:-}"; shift ;;
 		--purge) PURGE=1 ;;
 		-h|--help) usage; exit 0 ;;
 		*) echo "unknown option: $1" >&2; usage >&2; exit 2 ;;
@@ -49,8 +52,15 @@ skills_dir_for() {
 }
 
 remove_from() {
-	local ide="$1" dst
-	dst="$(skills_dir_for "$ide")/d2-diagram"
+	local ide="$1" root dst
+	# Install accepts --skills-dir, so removal has to as well; a skill you can
+	# put somewhere and not take away is a worse deal than no flag at all.
+	if [ -n "$SKILLS_DIR" ]; then
+		root="$SKILLS_DIR"
+	else
+		root="$(skills_dir_for "$ide")"
+	fi
+	dst="$root/d2-diagram"
 	if [ ! -d "$dst" ]; then
 		say "[$ide] not installed"
 		return 0

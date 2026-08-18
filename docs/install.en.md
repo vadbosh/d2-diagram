@@ -123,10 +123,11 @@ rather than producing a Mermaid block.
 ## Removing
 
 ```bash
-./uninstall.sh               # from every assistant that has it
+./uninstall.sh                     # from every assistant that has it
 ./uninstall.sh --dry-run
 ./uninstall.sh --ide codex
-./uninstall.sh --purge       # also delete the saved backups
+./uninstall.sh --skills-dir D      # from D, matching install.sh
+./uninstall.sh --purge             # also delete the saved backups
 ```
 
 Backups are kept unless `--purge` is given. The `d2` binary is left alone —

@@ -122,10 +122,11 @@ Mermaid.
 ## Удаление
 
 ```bash
-./uninstall.sh               # отовсюду, где он стоит
+./uninstall.sh                     # отовсюду, где он стоит
 ./uninstall.sh --dry-run
 ./uninstall.sh --ide codex
-./uninstall.sh --purge       # заодно удалить сохранённые копии
+./uninstall.sh --skills-dir D      # из D, парно с install.sh
+./uninstall.sh --purge             # заодно удалить сохранённые копии
 ```
 
 Без `--purge` копии остаются. Бинарник `d2` не трогается — этот репозиторий его
