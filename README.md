@@ -40,72 +40,6 @@ private.eks -> private.rds: ":5432"
 Coordinates are not your problem — `dagre` or `elk` computes them. The pull
 request shows `+ rds: RDS Postgres`, not a wall of coordinates.
 
-## What the skill adds on top of D2
-
-D2 is a language; the skill is the working practice around it, and most of it
-came out of things that went wrong:
-
-- **A palette in one file.** Tailwind slate with a blue spine and an orange
-  accent, imported by every diagram via `...@theme`. Change one file, restyle
-  the lot.
-- **PNG, never SVG, for anything on GitHub.** An embedded SVG shows up, but the
-  click lands on a page GitHub refuses to render, so the reader can see a
-  thumbnail and never enlarge it. The skill embeds a PNG wrapped in a link to
-  itself, and keeps SVG as a scratch step in `/tmp`.
-- **No markdown labels.** A `|md` block compiles to `<foreignObject>`, and an
-  SVG containing one is rejected by GitHub outright — a failure that looks like
-  a broken file rather than a styling choice.
-- **Aspect ratio as a first-class check.** A README column is about 900 px, so a
-  4:1 canvas is unreadable no matter how good the content is. Flip
-  `direction:` and check the `viewBox`.
-- **Where the edges come from.** Extract them — from `terraform_remote_state`
-  blocks, from `madge`, from `pyreverse` — rather than recalling what imports
-  what. A hand-drawn dependency graph is wrong the day someone adds an import.
-- **An honest boundary.** D2 cannot draw a Venn diagram, a pyramid, a radar or
-  anything where meaning lives in a coordinate or an area. The skill says so and
-  names what to use instead, so nobody spends an hour bending it into a funnel.
-
-## Gallery
-
-Four diagrams built by the skill, source and picture side by side in
-[`examples/`](examples/). Click any of them for full resolution — which is the
-whole reason the committed artefact is a PNG.
-
-### Terraform roots and apply order
-
-[![Terraform roots](examples/cluster-layers.png)](examples/cluster-layers.png)
-
-Source: [`examples/cluster-layers.d2`](examples/cluster-layers.d2) — 66 lines.
-Edges are `terraform_remote_state` reads, extracted from the code rather than
-recalled. Note the orange edge: it marks the one thing currently being replaced,
-which is what the reader should look at first.
-
-### Request path through a Kubernetes gateway
-
-[![Request path](examples/cluster-request-path.png)](examples/cluster-request-path.png)
-
-Source: [`examples/cluster-request-path.d2`](examples/cluster-request-path.d2).
-Every box names the RESOURCE that answers for it and every arrow the condition
-that has to hold — including the symmetric one that breaks connections when only
-one side is configured.
-
-### TypeScript monorepo — package graph
-
-[![Package graph](examples/ts-monorepo.png)](examples/ts-monorepo.png)
-
-Source: [`examples/ts-monorepo.d2`](examples/ts-monorepo.d2). Nothing about this
-is infrastructure-specific: containers are workspaces, edges are imports, and
-the orange pair is an import cycle a dependency extractor found.
-
-### TypeScript service — types and the tables behind them
-
-[![Domain model](examples/ts-domain-model.png)](examples/ts-domain-model.png)
-
-Source: [`examples/ts-domain-model.d2`](examples/ts-domain-model.d2).
-`shape: class` on the left, `shape: sql_table` on the right, edges attached to
-individual columns. Drawn together because that is where the quiet drift between
-a domain type and its column shows up.
-
 ## Install
 
 ```bash
@@ -243,6 +177,72 @@ open an SVG file page, which is why the committed picture is a PNG.
 Ask the assistant to re-render after any change to the `.d2`; the source and the
 picture are committed together, and a stale PNG is the one failure this setup
 still allows.
+
+## What the skill adds on top of D2
+
+D2 is a language; the skill is the working practice around it, and most of it
+came out of things that went wrong:
+
+- **A palette in one file.** Tailwind slate with a blue spine and an orange
+  accent, imported by every diagram via `...@theme`. Change one file, restyle
+  the lot.
+- **PNG, never SVG, for anything on GitHub.** An embedded SVG shows up, but the
+  click lands on a page GitHub refuses to render, so the reader can see a
+  thumbnail and never enlarge it. The skill embeds a PNG wrapped in a link to
+  itself, and keeps SVG as a scratch step in `/tmp`.
+- **No markdown labels.** A `|md` block compiles to `<foreignObject>`, and an
+  SVG containing one is rejected by GitHub outright — a failure that looks like
+  a broken file rather than a styling choice.
+- **Aspect ratio as a first-class check.** A README column is about 900 px, so a
+  4:1 canvas is unreadable no matter how good the content is. Flip
+  `direction:` and check the `viewBox`.
+- **Where the edges come from.** Extract them — from `terraform_remote_state`
+  blocks, from `madge`, from `pyreverse` — rather than recalling what imports
+  what. A hand-drawn dependency graph is wrong the day someone adds an import.
+- **An honest boundary.** D2 cannot draw a Venn diagram, a pyramid, a radar or
+  anything where meaning lives in a coordinate or an area. The skill says so and
+  names what to use instead, so nobody spends an hour bending it into a funnel.
+
+## Gallery
+
+Four diagrams built by the skill, source and picture side by side in
+[`examples/`](examples/). Click any of them for full resolution — which is the
+whole reason the committed artefact is a PNG.
+
+### Terraform roots and apply order
+
+[![Terraform roots](examples/cluster-layers.png)](examples/cluster-layers.png)
+
+Source: [`examples/cluster-layers.d2`](examples/cluster-layers.d2) — 66 lines.
+Edges are `terraform_remote_state` reads, extracted from the code rather than
+recalled. Note the orange edge: it marks the one thing currently being replaced,
+which is what the reader should look at first.
+
+### Request path through a Kubernetes gateway
+
+[![Request path](examples/cluster-request-path.png)](examples/cluster-request-path.png)
+
+Source: [`examples/cluster-request-path.d2`](examples/cluster-request-path.d2).
+Every box names the RESOURCE that answers for it and every arrow the condition
+that has to hold — including the symmetric one that breaks connections when only
+one side is configured.
+
+### TypeScript monorepo — package graph
+
+[![Package graph](examples/ts-monorepo.png)](examples/ts-monorepo.png)
+
+Source: [`examples/ts-monorepo.d2`](examples/ts-monorepo.d2). Nothing about this
+is infrastructure-specific: containers are workspaces, edges are imports, and
+the orange pair is an import cycle a dependency extractor found.
+
+### TypeScript service — types and the tables behind them
+
+[![Domain model](examples/ts-domain-model.png)](examples/ts-domain-model.png)
+
+Source: [`examples/ts-domain-model.d2`](examples/ts-domain-model.d2).
+`shape: class` on the left, `shape: sql_table` on the right, edges attached to
+individual columns. Drawn together because that is where the quiet drift between
+a domain type and its column shows up.
 
 ## Documentation
 

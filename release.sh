@@ -16,8 +16,59 @@ SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL="$SRC/skill/SKILL.md"
 LOG="$SRC/CHANGELOG.md"
 
+# Machine-specific paths belong to the machine, not to a public repository.
+# D2_MIRRORS is a colon-separated list of directories holding a COPY of the
+# skill that install.sh does not write — a config canon that redistributes it,
+# a second checkout, a container image. A copy that is behind is a copy that
+# will be read: this repository and one such canon disagreed on the version for
+# a day, and nothing noticed.
+mirrors() {
+	printf '%s\n' "${D2_MIRRORS:-}" | tr ':' '\n' | while read -r d; do
+		[ -n "$d" ] && [ -f "$d/SKILL.md" ] && printf '%s\n' "$d"
+	done
+}
+
+version_of() {
+	sed -n 's/^ *version: *"\([^"]*\)".*/\1/p' "$1" | head -1
+}
+
 version() {
-	sed -n 's/^ *version: *"\([^"]*\)".*/\1/p' "$SKILL" | head -1
+	version_of "$SKILL"
+}
+
+check_mirrors() {
+	local v="$1" d behind=0 n=0 mv same f
+	while read -r d; do
+		[ -n "$d" ] || continue
+		n=$((n + 1))
+		mv="$(version_of "$d/SKILL.md")"
+		same=1
+		for f in SKILL.md references/theme.d2 references/example-terraform-layers.d2 \
+		         references/example-code-structure.d2 references/example-data-model.d2; do
+			cmp -s "$SRC/skill/$f" "$d/$f" || same=0
+		done
+		if [ "$mv" = "$v" ] && [ "$same" -eq 1 ]; then
+			continue
+		fi
+		[ "$behind" -eq 0 ] && echo "  mirrors behind:"
+		behind=$((behind + 1))
+		echo "    ${d/#$HOME/\~}  version ${mv:-none}$([ "$same" -eq 0 ] && echo ", content differs")"
+	done <<-EOF
+	$(mirrors)
+	EOF
+
+	if [ "$behind" -gt 0 ]; then
+		echo "                     copy skill/ over them, or drop them from D2_MIRRORS"
+		return 1
+	fi
+	# "0 mirrors, all current" reads as a check that passed; nothing was
+	# checked. An unset D2_MIRRORS is the normal case on a fresh clone, and
+	# saying so is the difference between a fact and a formality.
+	if [ "$n" -eq 0 ]; then
+		echo "  mirrors:           none configured — set D2_MIRRORS to compare copies"
+		return 0
+	fi
+	echo "  mirrors:           $n, all at $v"
 }
 
 check() {
@@ -43,17 +94,16 @@ check() {
 		problems=$((problems + 1))
 	fi
 
-	# A tag that points somewhere other than the current commit means the tag
-	# was made, then work continued without a version bump. Both look fine on
-	# their own; only the comparison shows it.
+	# Commits after the tag are the normal state between releases, not a fault
+	# — reported, never counted as a problem. A check that is always red stops
+	# being read, which costs more than the thing it was watching for.
 	if git -C "$SRC" rev-parse "v$v" >/dev/null 2>&1; then
-		local tagged head
-		tagged="$(git -C "$SRC" rev-list -n1 "v$v")"
-		head="$(git -C "$SRC" rev-parse HEAD)"
-		if [ "$tagged" != "$head" ]; then
-			echo "  position:          v$v points at ${tagged:0:7}, HEAD is ${head:0:7}"
-			echo "                     bump the version, or move the tag deliberately"
-			problems=$((problems + 1))
+		local ahead
+		ahead="$(git -C "$SRC" rev-list --count "v$v..HEAD")"
+		if [ "$ahead" -gt 0 ]; then
+			echo "  unreleased:        $ahead commit(s) since v$v — bump the version to release them"
+		else
+			echo "  unreleased:        nothing since v$v"
 		fi
 	fi
 
@@ -68,6 +118,8 @@ check() {
 	done < <(grep -oE '(\./)?(release\.sh|install\.sh|uninstall\.sh|CHANGELOG\.md|CONTRIBUTING\.md|tests/)' "$SKILL" | sort -u || true)
 	[ "$leak" -eq 0 ] && echo "  shipped content:   no references to files that do not travel with the skill"
 	problems=$((problems + leak))
+
+	check_mirrors "$v" || problems=$((problems + 1))
 
 	if [ "$problems" -eq 0 ]; then
 		echo "  everything agrees on $v"
