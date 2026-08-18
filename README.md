@@ -3,16 +3,18 @@
 **In one line:** you ask your AI assistant for a diagram, and get a 40-line `.d2`
 source plus a `.png`, both committed next to the code they describe.
 
-| Use it for | Not for |
+| What you point it at | What comes back |
 |---|---|
-| architecture — what runs where, what calls what | bar, line, scatter, Gantt — no axes in D2 |
-| module and import graphs, cycles between packages | Venn, pyramid, funnel, radar, treemap |
-| request paths, with the condition each hop needs | a one-off pretty figure for a slide deck |
-| classes, data models, code against its tables | anything positioned by coordinate or area |
-| Terraform layers, Kubernetes topology, CI flows | |
+| a repository | a map of its parts and what calls what |
+| a `src/` directory | an import graph, with the cycles marked |
+| `.tf` files, or the output of `terraform graph` | the Terraform layers and the order they apply in |
+| Kubernetes manifests | the path of a request, load balancer to pod |
+| classes and migrations | the types beside the tables that store them |
+| a Mermaid block | the same diagram, redrawn in D2 |
 
-If the picture has to live in git and change with the code, this is the tool. If
-it has to be pretty once, it is not.
+It cannot draw charts over numbers, Venn diagrams, pyramids, funnels, radars or
+treemaps — anything whose meaning lives in a coordinate or an area. D2 places
+boxes with a layout engine, and that is the trade.
 
 ---
 
