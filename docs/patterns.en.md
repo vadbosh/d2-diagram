@@ -31,10 +31,15 @@ remote-state read. Apply order and coupling then read off the picture.
 Each emits JSON or dot; convert the edges into D2 lines and let the engine lay
 them out.
 
-**None of these were run while building this repository** — the table names the
-usual extractor per stack so that you reach for one instead of guessing at
-imports. Check its flags against its own documentation before relying on the
-line above.
+Only the Go pair was run here: `go list -deps ./...` returned 123 packages for a
+two-import module, and `go mod graph` printed nothing for it — correct, since it
+lists *module* requirements and a module with no external ones has none. Reach
+for `go list` when the question is packages.
+
+**The rest were not run** — none of madge, dependency-cruiser, pydeps, pyreverse,
+jdeps or deptrac is installed here. They are named so that you reach for an
+extractor instead of guessing at imports; check the flags against each tool's own
+documentation.
 
 **Live infrastructure.** When the question is "what is actually deployed" rather
 than "what does the code say", start from the state — `terraform state list` for

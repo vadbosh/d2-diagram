@@ -133,9 +133,15 @@ classes: {
 
 Reference values: paper `#f8fafc`, ink `#0f172a`, muted `#64748b`, rule `#cbd5e1`, accent `#2563eb`, accent-fill `#eff6ff`.
 
-Fonts stay D2's bundled defaults, which is what every example here was rendered with. A custom
-family takes TTF files through `--font-regular` and its siblings; that path has not been exercised
-here, so read `d2 --help` before relying on it.
+Fonts stay D2's bundled defaults — Source Sans Pro for text, Source Code Pro for monospace — and
+that is what every example here was rendered with.
+
+There are eight override flags (`--font-regular`, `-italic`, `-bold`, `-semibold` and the same four
+with `-mono`), each with its own `D2_FONT_*` variable, and each falling back to its own default when
+unset. **Measured on 0.7.1, they do not change the output.** A missing path is rejected outright
+(`failed to read font at …`), but passing a real TTF — two different ones, and through the
+environment variable as well — produced an SVG byte-identical to the default render. Treat a custom
+family as unavailable until you have verified it on your own build.
 
 ## Syntax that covers most infra diagrams
 
