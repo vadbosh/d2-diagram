@@ -145,6 +145,34 @@ Details, flags and verification: [docs/install.en.md](docs/install.en.md).
 There is nothing to invoke. Start a new session in the repository you want
 drawn, and ask in plain words — the skill triggers on the request itself.
 
+### The point: a diagram is not drawn twice
+
+This is what the whole arrangement is for. When the code moves on the diagram is
+not redrawn: say which one and what changed, and the assistant re-reads the code,
+edits the `.d2` and rebuilds the `.png`. Nothing watches the repository, so the
+request has to be made — it will not happen on its own.
+
+```
+The code has moved on — re-read src/ and update docs/diagrams/architecture.d2,
+then re-render the PNG.
+
+I added a worker service that reads the same database. Put it on the diagram
+and rebuild the picture.
+
+Check docs/diagrams/*.d2 against the current code and tell me which ones are
+now wrong before changing anything.
+```
+
+That last one is worth using before a release: it asks for an audit rather than
+an edit, so you find out what drifted without also finding out what the
+assistant decided to redraw.
+
+In this repository the equivalent is one command, `./render.sh`, which rebuilds
+every gallery picture and stamps `examples/.rendered` so the test suite can tell
+when a source changed without its picture.
+
+### What it looks like from the start
+
 **1. Open the assistant where the code is.**
 
 ```bash
@@ -237,10 +265,13 @@ they were run against a live module while writing this and returned the resource
 inventory and the full JSON, but that output is somebody's infrastructure and is
 not reproduced.
 
-`terraform_remote_state` blocks are the edges between root modules in a layered
-repository. That is not a general claim — it is how the shipped example was
-built: [`examples/cluster-layers.d2`](examples/cluster-layers.d2) has one edge
-per block found by the grep in
+Every `terraform_remote_state` block means one root module reads another's
+state — the relationship is already written down in the code, and only has to be
+found. In a layered repository those blocks are the whole dependency picture.
+
+That is not a general claim: it is how the shipped example was built.
+[`examples/cluster-layers.d2`](examples/cluster-layers.d2) has one arrow per
+block, and the grep that finds them is in
 [docs/patterns.en.md](docs/patterns.en.md#getting-the-edges-from-the-code-not-from-memory).
 
 What the skill adds on top of any of these is readability, not the graph. `dot`
@@ -271,32 +302,7 @@ Mark the queue orange, that is the part being replaced.
 Add the worker service, it reads the same database.
 ```
 
-**5. When the code moves on, ask for a re-render.**
-
-Nothing watches the repository, so this is the step that keeps the picture true.
-Say which diagram and what changed — the assistant re-reads the code, edits the
-`.d2` and rebuilds the `.png`:
-
-```
-The code has moved on — re-read src/ and update docs/diagrams/architecture.d2,
-then re-render the PNG.
-
-I added a worker service that reads the same database. Put it on the diagram
-and rebuild the picture.
-
-Check docs/diagrams/*.d2 against the current code and tell me which ones are
-now wrong before changing anything.
-```
-
-That last one is worth using before a release: it asks for an audit rather than
-an edit, so you find out what drifted without also finding out what the
-assistant decided to redraw.
-
-In this repository the equivalent is one command, `./render.sh`, which rebuilds
-every gallery picture and stamps `examples/.rendered` so the test suite can tell
-when a source changed without its picture.
-
-**6. Put it in your README.**
+**5. Put it in your README.**
 
 ```markdown
 [![Architecture](docs/diagrams/architecture.png)](docs/diagrams/architecture.png)
