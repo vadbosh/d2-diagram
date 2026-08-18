@@ -19,27 +19,40 @@ remote-state read. Apply order and coupling then read off the picture.
 
 **Code.**
 
-| Stack | Extractor |
-|---|---|
-| JS / TS | `madge --json src/`, `depcruise --output-type json` |
-| Python modules | `pydeps --show-deps --no-output pkg/` |
-| Python classes | `pyreverse -o dot pkg/` (ships with pylint) |
-| Go | `go mod graph`, `go list -deps ./...` |
-| Java | `jdeps -verbose:class app.jar` |
-| PHP | `deptrac analyse --formatter=json` |
+| Stack | Extractor | Run here? |
+|---|---|---|
+| JS / TS | `madge --json --extensions ts,tsx src` | yes — 541 modules, 1129 edges on a real project |
+| JS / TS | `depcruise --output-type json --no-config src` | yes, with a catch (below) |
+| Python modules | `pydeps <path-to-package> --show-deps --no-output --no-show` | yes |
+| Python classes | `pyreverse -o dot -p NAME <path>` (ships with pylint) | yes — 51 modules, 94 imports |
+| Go | `go list -deps ./...`, `go mod graph` | yes |
+| Java | `jdeps -verbose:class app.jar` | no JDK here |
+| PHP | `deptrac analyse --formatter=json` | no composer here |
 
 Each emits JSON or dot; convert the edges into D2 lines and let the engine lay
 them out.
 
-Only the Go pair was run here: `go list -deps ./...` returned 123 packages for a
-two-import module, and `go mod graph` printed nothing for it — correct, since it
-lists *module* requirements and a module with no external ones has none. Reach
-for `go list` when the question is packages.
+Four traps, each met while running these:
 
-**The rest were not run** — none of madge, dependency-cruiser, pydeps, pyreverse,
-jdeps or deptrac is installed here. They are named so that you reach for an
-extractor instead of guessing at imports; check the flags against each tool's own
-documentation.
+**dependency-cruiser installed globally returns an empty graph for TypeScript.**
+`"modules": []`, and it says why: it wants to be a local devDependency so it can
+reach the project's transpilers. The same global binary handled plain JavaScript
+correctly — 2 modules, 1 edge — so an empty result is a setup problem, not an
+answer. madge, also global, read the same TypeScript project without complaint.
+
+**`madge --circular` is the one that finds cycles**; `--json` gives the graph and
+says nothing about them. Both are worth running.
+
+**pydeps wants a path, not a module name.** `pydeps json` answers
+`No such file or directory: 'json'`; point it at the package directory instead.
+
+**pyreverse writes two files**, `classes_<name>.dot` and `packages_<name>.dot`,
+into the working directory rather than to stdout. A package with no classes
+leaves the first one empty, which looks like failure and is not.
+
+`go mod graph` printing nothing is the same kind of non-failure: it lists *module*
+requirements, and a module with no external ones has none. `go list -deps ./...`
+is the one that answers about packages — 123 of them for a two-import module.
 
 **Live infrastructure.** When the question is "what is actually deployed" rather
 than "what does the code say", start from the state — `terraform state list` for
