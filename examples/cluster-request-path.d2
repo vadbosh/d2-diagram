@@ -1,0 +1,48 @@
+...@../skill/references/theme
+
+direction: down
+
+# Plain text, not an |md block: a markdown label compiles to <foreignObject>,
+# and GitHub's SVG sanitizer refuses to render a file containing one.
+title: "Kubernetes — request path from client to pod\nEvery box names the RESOURCE that answers for it; every arrow, the condition\nthat has to hold for the hop to happen. Names are illustrative." {
+  shape: text
+  near: top-center
+  style: {font-size: 20; bold: true; font-color: "#0f172a"}
+}
+
+client: "client on the internet" {class: ext}
+
+dns: "DNS A record\napp.example.com\noutside the cluster" {class: ext}
+
+cloud: "cloud provider" {
+  class: zone
+  nlb: "network load balancer\nlistener 443 to target port 10443\nmanaged by the load-balancer controller" {class: comp}
+}
+
+k8s: "Kubernetes — namespace gateway-system" {
+  class: zone
+
+  proxy: "gateway proxy pods\npods v1, labelled with the owning gateway" {class: spine}
+
+  listener: "listener selection on Gateway public-gw\ngateways gateway.networking.k8s.io/v1" {class: comp}
+
+  cert: "TLS Secret\nsecrets v1 — must live in the Gateway namespace" {class: comp}
+}
+
+route: "HTTPRoute web/entry\nhttproutes gateway.networking.k8s.io/v1\nrule match: PathPrefix / — any path" {class: focus}
+
+svc: "Service web/frontend\nservices v1, selects by labels\nactual targets: endpointslices discovery.k8s.io/v1" {class: comp}
+
+pods: "application pods\npods v1, namespace web" {class: spine}
+
+client -> dns: "resolve the host" {class: dep}
+dns -> cloud.nlb: "the record points at this load balancer" {class: dep}
+cloud.nlb -> k8s.proxy: "target-type ip — targets are the proxy pod IPs" {class: dep}
+k8s.proxy -> k8s.listener: "PROXY protocol must be enabled on BOTH sides:\ntarget group and ClientTrafficPolicy.\nOne side alone drops the connection" {class: cut}
+k8s.listener -> k8s.cert: "port 443 only: tls.mode Terminate, certificateRefs" {class: read}
+k8s.listener -> route: "the connection PORT picks the listener,\nthen the request HOST must appear in spec.hostnames" {class: dep}
+route -> svc: "backendRefs, no namespace given —\nresolved in the namespace of the route" {class: dep}
+svc -> pods: "spec.selector by labels" {class: dep}
+
+policy: "traffic policy\ntimeouts and compression for the rule" {class: ext}
+policy -> route: "attaches to the route" {class: read}

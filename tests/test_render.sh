@@ -24,14 +24,28 @@ if ! command -v d2 >/dev/null 2>&1; then
 	exit 0
 fi
 
-# 1. Every shipped example compiles. The exit code is what counts: d2 leaves a
-#    partial file behind on failure, so the presence of output proves nothing.
-for f in "$REFS"/example-*.d2; do
+# 1. Every shipped example compiles — both the skill references and the gallery.
+#    The exit code is what counts: d2 leaves a partial file behind on failure,
+#    so the presence of output proves nothing.
+for f in "$REFS"/example-*.d2 "$SRC"/examples/*.d2; do
+	[ -e "$f" ] || continue
 	name="$(basename "$f")"
 	if d2 "$f" "$WORK/$name.svg" >/dev/null 2>&1; then
 		ok "compiles: $name"
 	else
 		no "compiles: $name"
+	fi
+done
+
+# 1b. Every gallery source has a committed PNG beside it. A source without its
+#     picture means the README shows a broken image to everyone.
+for f in "$SRC"/examples/*.d2; do
+	[ -e "$f" ] || continue
+	png="${f%.d2}.png"
+	if [ -f "$png" ]; then
+		ok "rendered: $(basename "$png")"
+	else
+		no "rendered: $(basename "$png") is missing — re-render it"
 	fi
 done
 

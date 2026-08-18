@@ -1,0 +1,51 @@
+...@../skill/references/theme
+
+direction: down
+
+# Plain text, not an |md block: a markdown label compiles to <foreignObject>,
+# and GitHub's SVG sanitizer refuses to render a file containing one.
+title: "TypeScript monorepo — package graph\nEdges are imports, taken from a dependency extractor rather than from memory:\nmadge --json apps packages | jq. Orange marks the cycle it found." {
+  shape: text
+  near: top-center
+  style: {font-size: 20; bold: true; font-color: "#0f172a"}
+}
+
+apps: apps {
+  class: zone
+  web: "web\nNext.js, the browser bundle" {class: spine}
+  admin: "admin\nback office, same UI kit" {class: comp}
+  worker: "worker\nqueue consumer, no HTTP surface" {class: comp}
+}
+
+packages: packages {
+  class: zone
+  ui: "ui\nReact components, no data access" {class: comp}
+  api_client: "api-client\ngenerated from the OpenAPI schema" {class: comp}
+  domain: "domain\npure types and rules — imports nothing" {class: spine}
+  db: "db\nPrisma client and migrations" {class: store}
+  config: "config\nenv parsing, one schema per service" {class: comp}
+}
+
+external: "outside the repository" {
+  class: layer
+  postgres: "PostgreSQL" {class: store}
+  redis: "Redis\nqueue and cache" {class: store}
+}
+
+apps.web -> packages.ui: {class: dep}
+apps.web -> packages.api_client: {class: dep}
+apps.web -> packages.config: {class: dep}
+apps.admin -> packages.ui: {class: dep}
+apps.admin -> packages.api_client: {class: dep}
+apps.worker -> packages.db: {class: dep}
+apps.worker -> packages.config: {class: dep}
+
+packages.api_client -> packages.domain: {class: dep}
+packages.db -> packages.domain: {class: dep}
+packages.ui -> packages.domain: {class: dep}
+
+packages.ui -> packages.api_client: "cycle: a component fetches its own data,\nand api-client imports ui for its error boundary" {class: cut}
+packages.api_client -> packages.ui: {class: cut}
+
+packages.db -> external.postgres: {class: read}
+apps.worker -> external.redis: {class: read}

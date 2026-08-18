@@ -1,0 +1,76 @@
+...@../skill/references/theme
+
+direction: down
+
+# Plain text, not an |md block: a markdown label compiles to <foreignObject>,
+# and GitHub's SVG sanitizer refuses to render a file containing one.
+title: "TypeScript service — types and the tables behind them\nLeft: what the code passes around. Right: what Postgres stores.\nThe two drift apart quietly, which is the point of drawing them together." {
+  shape: text
+  near: top-center
+  style: {font-size: 20; bold: true; font-color: "#0f172a"}
+}
+
+code: "packages/domain" {
+  class: zone
+
+  Order: {
+    shape: class
+    +id: OrderId
+    +customer: CustomerId
+    +lines: "Array of OrderLine"
+    +total(): Money
+    -assertNotShipped(): void
+  }
+
+  OrderLine: {
+    shape: class
+    +sku: string
+    +quantity: number
+    +unitPrice: Money
+  }
+
+  Repo: {
+    shape: class
+    -db: PrismaClient
+    +byId(id): "Order or null"
+    +save(order): Promise
+  }
+}
+
+store: "PostgreSQL" {
+  class: zone
+
+  orders: {
+    shape: sql_table
+    id: uuid {constraint: primary_key}
+    customer_id: uuid {constraint: foreign_key}
+    status: order_status
+    placed_at: timestamptz
+  }
+
+  order_lines: {
+    shape: sql_table
+    id: bigint {constraint: primary_key}
+    order_id: uuid {constraint: foreign_key}
+    sku: text
+    quantity: int
+    unit_price_cents: bigint
+  }
+
+  customers: {
+    shape: sql_table
+    id: uuid {constraint: primary_key}
+    email: citext {constraint: unique}
+  }
+}
+
+code.Order -> code.OrderLine: "has many" {class: dep}
+code.Repo -> code.Order: "returns" {class: dep}
+
+code.Repo -> store.orders: "Prisma maps the type to the row" {class: read}
+store.orders.id <-> store.order_lines.order_id: "1 : N" {class: dep}
+store.customers.id <-> store.orders.customer_id: "1 : N" {class: dep}
+
+note: "Money lives only in the code: the column is unit_price_cents,\na bigint. Nothing enforces that — a diagram is where it shows." {class: ext}
+note -> code.OrderLine: {class: cut}
+note -> store.order_lines: {class: cut}

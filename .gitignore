@@ -1,7 +1,11 @@
-# Rendered output. The .d2 source is committed, the picture is built from it;
-# a repository about not committing generated files should not commit its own.
+# Rendered output. SVG is a scratch step on the way to a PNG and is never kept.
 *.svg
+
+# PNG is generated too, but examples/ is the gallery: those pictures are what a
+# reader sees in the README without installing anything, so they are committed
+# alongside their source. Everywhere else a PNG is build output.
 *.png
+!examples/*.png
 
 # Backups written by the installer, if the default location is overridden into
 # a checkout. A backup inside a directory that gets copied elsewhere is the

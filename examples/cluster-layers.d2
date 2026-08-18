@@ -1,0 +1,68 @@
+...@../skill/references/theme
+
+direction: right
+
+# Plain text, not an |md block: a markdown label compiles to <foreignObject>,
+# and GitHub's SVG sanitizer refuses to render a file containing one.
+title: "cluster-a — example-sandbox (us-east-1)\nTerraform roots and their apply order. Arrows are terraform_remote_state reads.\nEvery root shares the S3 backend us-east-1/example-sandbox/" {
+  shape: text
+  near: top-center
+  style: {font-size: 20; bold: true; font-color: "#0f172a"}
+}
+
+vpc: "1.VPC" {
+  class: spine
+  sub: k8s subnets {class: comp}
+  s3e: S3 VPC endpoint {class: comp}
+  keys: KMS keys {class: comp}
+}
+
+core: "2.EKS-CORE" {
+  class: spine
+  eks: EKS cluster + node groups {class: comp}
+  sg: security groups {class: comp}
+  pi: pod identity {class: comp}
+}
+
+svc: "3.EKS-SERVICES" {
+  class: layer
+  alb: aws-load-balancer-controller {class: comp}
+  ing: ingress-nginx x5 {class: comp}
+  csi: ebs-csi + efs {class: comp}
+  as: cluster-autoscaler {class: comp}
+  auth: eks auth / SSO users {class: comp}
+}
+
+crd: "4.EKS-CRD" {
+  class: layer
+  cm: cert-manager {class: comp}
+  cil: cilium {class: comp}
+  keda: keda {class: comp}
+}
+
+logs: "5.EKS-LOGS" {
+  class: layer
+  fb: fluent-bit {class: comp}
+}
+
+vic: "7.EKS-VICTORIA-2" {
+  class: layer
+  vmc: vm-cluster {class: comp}
+  vma: vm-auth + vm-alert {class: comp}
+  exp: node-exporter + kube-state {class: comp}
+}
+
+gw: "11.EKS-GATEWAY-MIGRATION" {
+  class: focus
+  gws: 5 gateway entrypoints {class: hot}
+  plat: "envoy_gateway_platform\nmanage_platform = true" {class: hot}
+}
+
+vpc -> core: applied first {class: dep}
+core -> svc: {class: dep}
+core -> crd: {class: dep}
+core -> logs: {class: dep}
+core -> vic: {class: dep}
+core -> gw: {class: dep}
+
+svc -> gw: nginx classes being replaced {class: cut}

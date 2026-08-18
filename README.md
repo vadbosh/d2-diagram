@@ -65,6 +65,47 @@ came out of things that went wrong:
   anything where meaning lives in a coordinate or an area. The skill says so and
   names what to use instead, so nobody spends an hour bending it into a funnel.
 
+## Gallery
+
+Four diagrams built by the skill, source and picture side by side in
+[`examples/`](examples/). Click any of them for full resolution — which is the
+whole reason the committed artefact is a PNG.
+
+### Terraform roots and apply order
+
+[![Terraform roots](examples/cluster-layers.png)](examples/cluster-layers.png)
+
+Source: [`examples/cluster-layers.d2`](examples/cluster-layers.d2) — 66 lines.
+Edges are `terraform_remote_state` reads, extracted from the code rather than
+recalled. Note the orange edge: it marks the one thing currently being replaced,
+which is what the reader should look at first.
+
+### Request path through a Kubernetes gateway
+
+[![Request path](examples/cluster-request-path.png)](examples/cluster-request-path.png)
+
+Source: [`examples/cluster-request-path.d2`](examples/cluster-request-path.d2).
+Every box names the RESOURCE that answers for it and every arrow the condition
+that has to hold — including the symmetric one that breaks connections when only
+one side is configured.
+
+### TypeScript monorepo — package graph
+
+[![Package graph](examples/ts-monorepo.png)](examples/ts-monorepo.png)
+
+Source: [`examples/ts-monorepo.d2`](examples/ts-monorepo.d2). Nothing about this
+is infrastructure-specific: containers are workspaces, edges are imports, and
+the orange pair is an import cycle a dependency extractor found.
+
+### TypeScript service — types and the tables behind them
+
+[![Domain model](examples/ts-domain-model.png)](examples/ts-domain-model.png)
+
+Source: [`examples/ts-domain-model.d2`](examples/ts-domain-model.d2).
+`shape: class` on the left, `shape: sql_table` on the right, edges attached to
+individual columns. Drawn together because that is where the quiet drift between
+a domain type and its column shows up.
+
 ## Install
 
 ```bash
