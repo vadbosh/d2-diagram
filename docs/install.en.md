@@ -42,9 +42,9 @@ Idempotent. The installer compares the shipped skill with what is installed and
 does nothing when they match:
 
 ```
-[claude] already current — /root/.claude/skills/d2-diagram
-[opencode] already current — /root/.config/opencode/skills/d2-diagram
-[codex] already current — /root/.codex/skills/d2-diagram
+[claude] already current — ~/.claude/skills/d2-diagram
+[opencode] already current — ~/.config/opencode/skills/d2-diagram
+[codex] already current — ~/.codex/skills/d2-diagram
 ```
 
 When they differ, the existing copy is saved first — to
@@ -64,7 +64,7 @@ binary is not just reported, it is offered:
 
 ```
 d2 is NOT on PATH — the skill can write .d2 files but nothing will render.
-Download and install the latest d2 into /root/.local/bin? [y/N]
+Download and install the latest d2 into ~/.local/bin? [y/N]
 ```
 
 Answer `y` and the installer resolves the newest release for this OS and

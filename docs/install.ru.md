@@ -42,9 +42,9 @@
 не делает, если они совпадают:
 
 ```
-[claude] already current — /root/.claude/skills/d2-diagram
-[opencode] already current — /root/.config/opencode/skills/d2-diagram
-[codex] already current — /root/.codex/skills/d2-diagram
+[claude] already current — ~/.claude/skills/d2-diagram
+[opencode] already current — ~/.config/opencode/skills/d2-diagram
+[codex] already current — ~/.codex/skills/d2-diagram
 ```
 
 Если различаются, прежняя копия сначала сохраняется — в
@@ -64,7 +64,7 @@
 
 ```
 d2 is NOT on PATH — the skill can write .d2 files but nothing will render.
-Download and install the latest d2 into /root/.local/bin? [y/N]
+Download and install the latest d2 into ~/.local/bin? [y/N]
 ```
 
 Ответишь `y` — установщик определит последний релиз под твою ОС и архитектуру,

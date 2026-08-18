@@ -82,7 +82,7 @@ diagram — use `zone` there: white inside, thick accent border, accent title.
 Write the title as a plain quoted string with `\n`, on a `shape: text` node so it gets no border:
 
 ```d2
-title: "cluster-a — thoth-sandbox (us-east-1)\nSubtitle line, no backticks — plain text only." {
+title: "cluster-a — example-sandbox (us-east-1)\nSubtitle line, no backticks — plain text only." {
   shape: text
   near: top-center
   style: {font-size: 20; bold: true; font-color: "#0f172a"}
@@ -137,7 +137,7 @@ Fonts stay D2's bundled defaults. A custom family needs real TTF files passed as
 ## Syntax that covers most infra diagrams
 
 ```d2
-title: "cluster-a — thoth-sandbox (us-east-1)\nSubtitle on its own line. Plain text — no markdown, no backticks." {
+title: "cluster-a — example-sandbox (us-east-1)\nSubtitle on its own line. Plain text — no markdown, no backticks." {
   shape: text
   near: top-center
   style: {font-size: 20; bold: true}
@@ -216,7 +216,7 @@ cache, keep the PNG, drop the SVG:
 
 ```bash
 d2 cluster.d2 /tmp/cluster.svg
-/root/.cache/ms-playwright/chromium-1228/chrome-linux/chrome \
+$HOME/.cache/ms-playwright/chromium-1228/chrome-linux/chrome \
   --headless --disable-gpu --no-sandbox --hide-scrollbars \
   --force-device-scale-factor=2 --window-size=2400,1000 \
   --screenshot=docs/diagrams/cluster.png "file:///tmp/cluster.svg"
