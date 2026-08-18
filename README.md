@@ -17,11 +17,11 @@ instead of expensive.
 |---|---|---|
 | the whole repository | architecture | services, stores and queues as boxes, calls as arrows |
 | `src/` | dependency diagram | one node per module, an edge per import, cycles in orange |
-| `src/` | class diagram | classes with their fields and methods, inheritance and use |
-| `.tf` files or `terraform graph` | resource diagram | every resource and the dependencies between them |
+| `src/` | class diagram | each class a box of fields and methods, inheritance and use as arrows |
+| `.tf` files or `terraform graph` | resource diagram | each resource a box, the dependencies between them arrows |
 | a layered Terraform repo | apply-order diagram | one box per root module, edges from remote-state reads |
-| SQL migrations, `CREATE TABLE`, ORM models | ER diagram | tables with typed columns, `PK`/`FK` markers, `1 : N` edges |
-| Kubernetes and Ingress manifests | request path | the hops from load balancer to pod, with the condition each needs |
+| SQL migrations, `CREATE TABLE`, ORM models | ER diagram | each table a box of columns with their types and `PK`/`FK` markers; foreign keys as arrows labelled `1 : N` |
+| Kubernetes and Ingress manifests | request path | a chain of boxes from load balancer to pod, every arrow carrying its condition |
 | a state machine in code | state diagram | states as boxes, transitions as labelled arrows |
 | a Mermaid or Graphviz source | a redraw | the same graph in D2, laid out and styled |
 
