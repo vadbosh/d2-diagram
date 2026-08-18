@@ -159,23 +159,53 @@ That second half is what separates a useful diagram from a box collage. Compare
 which of those calls go through the cache" — the first invites everything, the
 second has an answer that can be right or wrong.
 
-Prompts that work as written:
+Prompts that work as typed — copy one and change the paths:
 
 ```
-Read this repository and draw the architecture: what runs where, and what
-talks to what. Put it in docs/diagrams/.
+From the code in this repository, draw a diagram of the modules and how they
+talk to the database. Save it in docs/diagrams/.
 
-Map the imports between packages in src/ — I want to see whether there are
-cycles. Extract the edges with a dependency tool, do not guess them.
+Draw the architecture: what runs where, and what calls what. Read the code,
+do not guess.
 
-Draw the path of an HTTP request from the load balancer to the database,
-with the conditions each hop needs.
+Map the imports between packages in src/ and show me whether there are
+cycles. Use a dependency tool to get the edges.
+
+Draw the path of an HTTP request from the load balancer down to the database,
+and mark what has to be true at each hop.
 
 Diagram the data model: the TypeScript types on one side, the Postgres tables
-on the other, so I can see where they disagree.
+on the other, so I can see where the two disagree.
 
 Redraw this Mermaid block as a D2 diagram and put it in docs/diagrams/.
 ```
+
+### Terraform is a special case — the graph already exists
+
+For infrastructure you should not be asking anyone to read `.tf` files by eye.
+Terraform can print its own dependency graph, and the state knows what is really
+deployed. Say so in the prompt and the diagram stops being an interpretation:
+
+```
+Build the diagram from `terraform graph` rather than from reading the files.
+
+Take the real deployment from the state, not from the configuration:
+run `inframap generate terraform.tfstate` and draw that.
+
+Draw how the root modules depend on each other — the edges are the
+`terraform_remote_state` blocks, one per cross-root read.
+```
+
+- `terraform graph` — the dependency graph "between different objects in the
+  current configuration and state", printed as DOT.
+- `inframap generate <tfstate>` — a provider-aware graph of what is actually in
+  the state, which is a different question from what the code says.
+- `terraform_remote_state` blocks — in a layered repository these *are* the
+  edges between root modules, and grepping them is exact where recollection is
+  not.
+
+The assistant converts whichever of those you point it at into D2 and lays it
+out. The value it adds over raw `dot` output is readability, not the graph.
 
 **3. What the assistant does.**
 
