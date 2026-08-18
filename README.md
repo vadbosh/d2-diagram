@@ -4,15 +4,6 @@ You ask your AI assistant for a diagram. It reads the code and writes a `.d2` �
 a text source of forty-odd lines — and one command turns that into a `.png`.
 Both files sit in the repository next to the code they describe.
 
-That is the point of the text file. When the code changes, the diagram is not
-redrawn from scratch: a few lines of `.d2` change, the picture is re-rendered
-with one command, and both go in the same commit as the code. Asking the
-assistant to update it costs a sentence.
-
-It does not happen by itself. Nothing watches the code, and a `.png` that nobody
-re-rendered is the one failure this setup still allows — it is just cheap to fix
-instead of expensive.
-
 | Point it at | Ask for | You get |
 |---|---|---|
 | the whole repository | architecture | services, stores and queues as boxes, calls as arrows |
@@ -45,6 +36,32 @@ macOS binaries exist and the installer has a code path for them, but the
 installer itself has not been run on a Mac.
 
 [Русская версия](README.RU.md)
+
+## A diagram is not drawn twice
+
+This is what the whole arrangement is for. When the code moves on the diagram is
+not redrawn: say which one and what changed, and the assistant re-reads the code,
+edits the `.d2` and rebuilds the `.png`. Nothing watches the repository, so the
+request has to be made — it will not happen on its own.
+
+```
+The code has moved on — re-read src/ and update docs/diagrams/architecture.d2,
+then re-render the PNG.
+
+I added a worker service that reads the same database. Put it on the diagram
+and rebuild the picture.
+
+Check docs/diagrams/*.d2 against the current code and tell me which ones are
+now wrong before changing anything.
+```
+
+That last one is worth using before a release: it asks for an audit rather than
+an edit, so you find out what drifted without also finding out what the
+assistant decided to redraw.
+
+In this repository the equivalent is one command, `./render.sh`, which rebuilds
+every gallery picture and stamps `examples/.rendered` so the test suite can tell
+when a source changed without its picture.
 
 ## Why
 
@@ -144,32 +161,6 @@ Details, flags and verification: [docs/install.en.md](docs/install.en.md).
 
 There is nothing to invoke. Start a new session in the repository you want
 drawn, and ask in plain words — the skill triggers on the request itself.
-
-### The point: a diagram is not drawn twice
-
-This is what the whole arrangement is for. When the code moves on the diagram is
-not redrawn: say which one and what changed, and the assistant re-reads the code,
-edits the `.d2` and rebuilds the `.png`. Nothing watches the repository, so the
-request has to be made — it will not happen on its own.
-
-```
-The code has moved on — re-read src/ and update docs/diagrams/architecture.d2,
-then re-render the PNG.
-
-I added a worker service that reads the same database. Put it on the diagram
-and rebuild the picture.
-
-Check docs/diagrams/*.d2 against the current code and tell me which ones are
-now wrong before changing anything.
-```
-
-That last one is worth using before a release: it asks for an audit rather than
-an edit, so you find out what drifted without also finding out what the
-assistant decided to redraw.
-
-In this repository the equivalent is one command, `./render.sh`, which rebuilds
-every gallery picture and stamps `examples/.rendered` so the test suite can tell
-when a source changed without its picture.
 
 ### What it looks like from the start
 
