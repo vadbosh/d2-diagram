@@ -10,7 +10,8 @@ Mermaid, который рендерится, но выглядит как вс�
 коммитится PNG. Схема живёт в git, меняется тем же pull request, что и код, и её
 diff можно прочитать.
 
-Работает с Claude Code, Opencode и Codex на Linux и macOS.
+Работает с Claude Code, Opencode и Codex. Собрано и проверено на Linux; пути
+macOS установщик обрабатывает, но там его пока никто не запускал.
 
 [English version](README.md)
 

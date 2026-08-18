@@ -9,7 +9,8 @@ This skill takes the third route. The assistant writes a few dozen lines of
 PNG committed next to the source. The diagram lives in git, changes in the same
 pull request as the code, and its diff is readable.
 
-Works with Claude Code, Opencode and Codex on Linux and macOS.
+Works with Claude Code, Opencode and Codex. Built and tested on Linux; the
+installer handles macOS paths, but nobody has run it there yet.
 
 [Русская версия](README.RU.md)
 

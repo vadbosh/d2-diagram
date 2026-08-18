@@ -131,8 +131,9 @@ classes: {
 
 Reference values: paper `#f8fafc`, ink `#0f172a`, muted `#64748b`, rule `#cbd5e1`, accent `#2563eb`, accent-fill `#eff6ff`.
 
-Fonts stay D2's bundled defaults. A custom family needs real TTF files passed as
-`--font-regular/--font-bold/--font-italic/--font-semibold` together — a partial set silently falls back.
+Fonts stay D2's bundled defaults, which is what every example here was rendered with. A custom
+family takes TTF files through `--font-regular` and its siblings; that path has not been exercised
+here, so read `d2 --help` before relying on it.
 
 ## Syntax that covers most infra diagrams
 
@@ -157,9 +158,14 @@ vpc -> svc: applied first {class: dep}
 ext -> svc: read while flag = false {class: read}
 ```
 
-Useful extras: `shape: cylinder|queue|cloud|package|hexagon`, `direction: right`, `sql_table` for
-data models, `near: top-center` for pinned labels, `layers`/`scenarios`/`steps` for a before/after pair
-in one file.
+Shapes accepted by 0.7.1, all checked against the binary: `rectangle`, `square`, `page`,
+`parallelogram`, `document`, `cylinder`, `queue`, `package`, `step`, `callout`, `stored_data`,
+`person`, `diamond`, `oval`, `circle`, `hexagon`, `cloud`, `text`, `code`, `class`, `sql_table`,
+`sequence_diagram`. `triangle` is not one of them — it is only an arrowhead.
+
+`layers`/`scenarios`/`steps` put several boards in one file. Note what that does to the output: it
+writes a *directory*, `out/index.svg` plus `out/scenarios/<name>.svg`, not the single file the rest
+of this skill assumes.
 
 `d2 themes` lists built-in theme IDs, `d2 layout` lists engines. In 0.7.1 only `dagre` (default) and
 `elk` are bundled; `elk` is usually better for layered infra, `dagre` for trees and flows.

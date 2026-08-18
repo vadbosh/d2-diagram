@@ -31,6 +31,11 @@ remote-state read. Apply order and coupling then read off the picture.
 Each emits JSON or dot; convert the edges into D2 lines and let the engine lay
 them out.
 
+**None of these were run while building this repository** — the table names the
+usual extractor per stack so that you reach for one instead of guessing at
+imports. Check its flags against its own documentation before relying on the
+line above.
+
 **Live infrastructure.** When the question is "what is actually deployed" rather
 than "what does the code say", start from the state — `terraform state list` for
 the inventory, `terraform show -json` for the attributes and the dependency
