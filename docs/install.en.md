@@ -79,8 +79,21 @@ Nothing is downloaded silently:
 - `--no-d2` suppresses the offer entirely;
 - `--dry-run` prints the exact URL it would fetch and stops.
 
-Platform detection covers `linux` and `macos` on `amd64` and `arm64`. Anything
-else prints the releases page and leaves the decision to you.
+Platform detection covers `linux` and `macos` on `amd64` and `arm64`; all four
+archives were fetched from the current release and answer with HTTP 200, so the
+names the installer builds are right. Anything else prints the releases page and
+leaves the decision to you.
+
+On macOS the installer prefers Homebrew when it finds it: `brew install d2`
+currently gives 0.8.1, ahead of the newest GitHub release, because upstream
+tagged v0.8.1 without attaching binaries to it. With no brew — or if brew fails
+— it falls back to the release archive, which is 0.7.1.
+
+That fallback was exercised on Linux by faking a Darwin host with a failing
+brew: the script reported the failure, resolved `macos-arm64`, downloaded the
+archive, and then refused it because the binary would not run on the machine —
+`installed … but it does not run — wrong build for this machine?`. The brew
+branch itself has never run on a real Mac.
 
 The version is resolved from the GitHub *releases* endpoint, not from tags. A
 tag can exist upstream with no binaries attached — `v0.8.1` is exactly that —

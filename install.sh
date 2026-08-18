@@ -171,6 +171,26 @@ d2_latest_tag() {
 
 install_d2() {
 	local plat tag url tmp
+	# On macOS Homebrew is both shorter and ahead: the formula carried 0.8.1
+	# while the newest GitHub *release* was 0.7.1, because upstream tagged
+	# v0.8.1 without attaching binaries to it. Prefer it when it is there.
+	#
+	# NOT TESTED: this repository was built on Linux and no Mac was available.
+	# The branch is written from the documented behaviour of `brew install`;
+	# if it misbehaves, `--no-d2` plus `brew install d2` by hand is the escape.
+	if [ "$(uname -s)" = "Darwin" ] && command -v brew >/dev/null 2>&1; then
+		say "Homebrew found — installing d2 from the formula (usually newer than the release)"
+		if [ "$DRY_RUN" -eq 1 ]; then
+			say "  would: brew install d2"
+			return 0
+		fi
+		if brew install d2; then
+			say "installed $(command -v d2 || echo d2) ($(d2 --version 2>/dev/null || echo '?'))"
+			return 0
+		fi
+		say "brew install failed — falling back to the release archive"
+	fi
+
 	if ! plat="$(d2_platform)"; then
 		say "cannot pick a d2 build for $(uname -s)/$(uname -m) — install it by hand:"
 		say "  https://github.com/terrastruct/d2/releases"

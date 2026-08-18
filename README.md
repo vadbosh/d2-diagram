@@ -10,7 +10,8 @@ PNG committed next to the source. The diagram lives in git, changes in the same
 pull request as the code, and its diff is readable.
 
 Works with Claude Code, Opencode and Codex. Built and tested on Linux; the
-installer handles macOS paths, but nobody has run it there yet.
+macOS binaries exist and the installer has a code path for them, but the
+installer itself has not been run on a Mac.
 
 [Русская версия](README.RU.md)
 
@@ -72,6 +73,25 @@ installation: the installer resolves the latest release for your OS and
 architecture and unpacks it into `~/.local/bin`. On a terminal it asks first and
 defaults to no; `--with-d2` skips the question, `--no-d2` suppresses it.
 
+The binary exists for Linux and macOS, on both Intel and ARM. Checked against
+the current release, `v0.7.1`, each of these downloads with HTTP 200:
+
+```
+d2-v0.7.1-linux-amd64.tar.gz    20 MB
+d2-v0.7.1-linux-arm64.tar.gz    19 MB
+d2-v0.7.1-macos-amd64.tar.gz    20 MB
+d2-v0.7.1-macos-arm64.tar.gz    19 MB
+```
+
+On macOS the installer reaches for Homebrew first, because it is ahead: the
+formula currently carries **0.8.1** while the newest GitHub release is 0.7.1 —
+upstream tagged v0.8.1 without attaching binaries to it. Without brew it falls
+back to the archive.
+
+```bash
+brew install d2        # what the installer runs on a Mac that has brew
+```
+
 Upstream also offers a `curl … | sh` one-liner. This repository does not use it
 and does not recommend it — piping a downloaded script straight into a shell
 executes whatever the endpoint served, and the same result is one archive away:
@@ -84,6 +104,8 @@ curl -fsSL -o d2.tar.gz \
 tar xzf d2.tar.gz
 install -m 0755 "d2-$tag/bin/d2" ~/.local/bin/d2
 ```
+
+Swap `linux-arm64` for your platform from the list above.
 
 Details, flags and verification: [docs/install.en.md](docs/install.en.md).
 
@@ -243,12 +265,14 @@ came out of things that went wrong:
   click lands on a page GitHub refuses to render, so the reader can see a
   thumbnail and never enlarge it. The skill embeds a PNG wrapped in a link to
   itself, and keeps SVG as a scratch step in `/tmp`.
-- **No markdown labels.** A `|md` block compiles to `<foreignObject>`, and an
-  SVG containing one is rejected by GitHub outright — a failure that looks like
-  a broken file rather than a styling choice.
+- **No markdown labels.** A `|md` block compiles to `<foreignObject>` — the SVG
+  element that embeds arbitrary HTML inside a picture. GitHub's sanitiser
+  rejects any SVG containing one, so the failure looks like a broken file rather
+  than a styling choice.
 - **Aspect ratio as a first-class check.** A README column is about 900 px, so a
-  4:1 canvas is unreadable no matter how good the content is. Flip
-  `direction:` and check the `viewBox`.
+  4:1 canvas is unreadable no matter how good the content is. Flip `direction:`
+  and read the canvas size back from the `viewBox` attribute at the top of the
+  rendered SVG — that is where D2 records how large the picture came out.
 - **Where the edges come from.** Extract them — from `terraform_remote_state`
   blocks, from `madge`, from `pyreverse` — rather than recalling what imports
   what. A hand-drawn dependency graph is wrong the day someone adds an import.
@@ -293,8 +317,9 @@ the orange pair is an import cycle a dependency extractor found.
 [![Domain model](examples/ts-domain-model.png)](examples/ts-domain-model.png)
 
 Source: [`examples/ts-domain-model.d2`](examples/ts-domain-model.d2).
-`shape: class` on the left, `shape: sql_table` on the right, edges attached to
-individual columns. Drawn together because that is where the quiet drift between
+Two of D2's built-in shapes do the work: `class` draws a UML-style box with
+fields and methods, `sql_table` draws a table with column types and `PK`/`FK`
+markers. Edges attach to individual columns. Drawn together because that is where the quiet drift between
 a domain type and its column shows up.
 
 ## Documentation
