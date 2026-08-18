@@ -1,0 +1,36 @@
+# Rendered output. The .d2 source is committed, the picture is built from it;
+# a repository about not committing generated files should not commit its own.
+*.svg
+*.png
+
+# Backups written by the installer, if the default location is overridden into
+# a checkout. A backup inside a directory that gets copied elsewhere is the
+# specific mistake this repository documents.
+*.bak
+*.bak.*
+*.orig
+*.rej
+
+# AI assistant artefacts.
+CLAUDE.md
+AGENTS.md
+.claude/
+.codex/
+.cursor/
+.gemini/
+.ai-context/
+.memsearch/
+.opencode/
+
+# Work notes about this repository — kept per checkout, not part of what ships.
+kb/
+
+# Python bytecode.
+__pycache__/
+*.pyc
+
+# OS and editor noise.
+.DS_Store
+Thumbs.db
+*.swp
+*~

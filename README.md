@@ -1,0 +1,136 @@
+# d2-diagram
+
+Ask an assistant for an architecture diagram and you usually get one of two
+things: a Mermaid block that renders but looks like every other Mermaid block, or
+several hundred lines of hand-placed SVG that nobody will ever edit again.
+
+This skill takes the third route. The assistant writes a few dozen lines of
+[D2](https://d2lang.com), a layout engine places the boxes, and the result is a
+PNG committed next to the source. The diagram lives in git, changes in the same
+pull request as the code, and its diff is readable.
+
+Works with Claude Code, Opencode and Codex on Linux and macOS.
+
+[Русская версия](README.RU.md)
+
+## Why
+
+A diagram is documentation that rots fastest, because editing it costs more than
+ignoring it. Two habits make that worse:
+
+- **A picture with no source.** An SVG produced by hand cannot be changed
+  without redoing the work. So it is not changed, and within a month it
+  describes a system that no longer exists.
+- **A source nobody reviews.** Five hundred lines of `<path d="M…">` in a pull
+  request is not something a reviewer reads. The change goes in unchecked.
+
+D2 fixes both by separating them. Adding a component is one line:
+
+```d2
+private: Private subnets {
+  eks: EKS node group
+  rds: RDS Postgres {shape: cylinder}
+}
+
+internet -> public.alb: ":443"
+public.alb -> private.eks: ":8080"
+private.eks -> private.rds: ":5432"
+```
+
+Coordinates are not your problem — `dagre` or `elk` computes them. The pull
+request shows `+ rds: RDS Postgres`, not a wall of coordinates.
+
+## What the skill adds on top of D2
+
+D2 is a language; the skill is the working practice around it, and most of it
+came out of things that went wrong:
+
+- **A palette in one file.** Tailwind slate with a blue spine and an orange
+  accent, imported by every diagram via `...@theme`. Change one file, restyle
+  the lot.
+- **PNG, never SVG, for anything on GitHub.** An embedded SVG shows up, but the
+  click lands on a page GitHub refuses to render, so the reader can see a
+  thumbnail and never enlarge it. The skill embeds a PNG wrapped in a link to
+  itself, and keeps SVG as a scratch step in `/tmp`.
+- **No markdown labels.** A `|md` block compiles to `<foreignObject>`, and an
+  SVG containing one is rejected by GitHub outright — a failure that looks like
+  a broken file rather than a styling choice.
+- **Aspect ratio as a first-class check.** A README column is about 900 px, so a
+  4:1 canvas is unreadable no matter how good the content is. Flip
+  `direction:` and check the `viewBox`.
+- **Where the edges come from.** Extract them — from `terraform_remote_state`
+  blocks, from `madge`, from `pyreverse` — rather than recalling what imports
+  what. A hand-drawn dependency graph is wrong the day someone adds an import.
+- **An honest boundary.** D2 cannot draw a Venn diagram, a pyramid, a radar or
+  anything where meaning lives in a coordinate or an area. The skill says so and
+  names what to use instead, so nobody spends an hour bending it into a funnel.
+
+## Install
+
+```bash
+git clone https://github.com/vadbosh/d2-diagram.git
+cd d2-diagram
+./install.sh              # every assistant found
+./install.sh --dry-run    # show what would happen
+```
+
+The skill goes into `~/.claude/skills/d2-diagram`,
+`~/.config/opencode/skills/d2-diagram` and `~/.codex/skills/d2-diagram` —
+whichever of those exist. An assistant that is not installed is skipped, not
+created.
+
+The skill is useless without the `d2` binary, so a missing one is offered for
+installation: the installer resolves the latest release for your OS and
+architecture and unpacks it into `~/.local/bin`. On a terminal it asks first and
+defaults to no; `--with-d2` skips the question, `--no-d2` suppresses it.
+
+Upstream also offers a `curl … | sh` one-liner. This repository does not use it
+and does not recommend it — piping a downloaded script straight into a shell
+executes whatever the endpoint served, and the same result is one archive away:
+
+```bash
+tag=$(curl -fsSL https://api.github.com/repos/terrastruct/d2/releases/latest \
+      | sed -n 's/.*"tag_name" *: *"\([^"]*\)".*/\1/p' | head -1)
+curl -fsSL -o d2.tar.gz \
+  "https://github.com/terrastruct/d2/releases/download/$tag/d2-$tag-linux-arm64.tar.gz"
+tar xzf d2.tar.gz
+install -m 0755 "d2-$tag/bin/d2" ~/.local/bin/d2
+```
+
+Details, flags and verification: [docs/install.en.md](docs/install.en.md).
+
+## Use
+
+Nothing to invoke — the skill triggers on the request. "Draw the architecture of
+this module", "map the imports in `src/`", "diagram the request path" all reach
+it. It reads the actual source before drawing, writes `<name>.d2`, renders
+`<name>.png`, and shows you the picture.
+
+```
+docs/diagrams/
+├── theme.d2            shared colors and line styles
+├── cluster.d2          the source — this is what you edit and review
+└── cluster.png         what the README links to
+```
+
+## Documentation
+
+| File | What is in it |
+|---|---|
+| [docs/install.en.md](docs/install.en.md) | installing, flags, verifying, removing |
+| [docs/design.en.md](docs/design.en.md) | why D2, why PNG, and what D2 cannot draw |
+| [docs/patterns.en.md](docs/patterns.en.md) | recipes for infrastructure, code and data models, plus the traps |
+
+## Tests
+
+```bash
+./tests/test_render.sh
+```
+
+Compiles every shipped example, asserts none of them produces a
+`<foreignObject>`, validates the theme, and checks that every style class the
+skill documents actually exists. Skips cleanly when `d2` is absent.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

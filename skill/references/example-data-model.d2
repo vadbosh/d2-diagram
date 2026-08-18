@@ -1,0 +1,37 @@
+...@theme
+
+direction: right
+
+title: "shape: sql_table — data model\nColumns carry their type; the tag after the type is a constraint marker." {
+  shape: text
+  near: top-center
+  style: {font-size: 20; bold: true}
+}
+
+zone: route53_zone {
+  shape: sql_table
+  id: varchar(32) {constraint: primary_key}
+  name: varchar(255)
+  private: boolean
+}
+
+record: dns_record {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  zone_id: varchar(32) {constraint: foreign_key}
+  name: varchar(255)
+  type: varchar(8)
+  weight: int
+  set_identifier: varchar(64) {constraint: unique}
+}
+
+target: lb_target {
+  shape: sql_table
+  id: bigint {constraint: primary_key}
+  record_id: bigint {constraint: foreign_key}
+  dns_name: varchar(255)
+  hosted_zone_id: varchar(32)
+}
+
+zone.id <-> record.zone_id: "1 : N" {class: dep}
+record.id <-> target.record_id: "1 : 1" {class: read}

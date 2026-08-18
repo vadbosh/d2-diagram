@@ -1,0 +1,46 @@
+...@theme
+
+direction: right
+
+title: "D2 for code, not infrastructure\nleft — module graph, right — class shapes" {
+  shape: text
+  near: top-center
+  style: {font-size: 20; bold: true}
+}
+
+modules: "module graph" {
+  class: zone
+  cli: cli.py {class: spine}
+  parser: parser.py {class: comp}
+  resolver: resolver.py {class: comp}
+  cache: "cache.py" {class: store}
+  api: "api_client.py" {class: comp}
+
+  cli -> parser: imports {class: dep}
+  cli -> resolver {class: dep}
+  resolver -> cache: read/write {class: read}
+  resolver -> api: on cache miss {class: cut}
+  parser -> resolver: cyclic import {class: cut}
+}
+
+uml: "class shapes" {
+  class: zone
+
+  Record: {
+    shape: class
+    +zone_id: str
+    +name: str
+    +weight: int
+    +to_change_batch(): dict
+    -validate(): bool
+  }
+
+  Client: {
+    shape: class
+    -session: boto3.Session
+    +list_records(zone): "list of Record"
+    +apply(batch): str
+  }
+
+  Client -> Record: "returns" {class: dep}
+}
