@@ -3,14 +3,17 @@
 **In one line:** you ask your AI assistant for a diagram, and get a 40-line `.d2`
 source plus a `.png`, both committed next to the code they describe.
 
-| What you point it at | What comes back |
-|---|---|
-| a repository | a map of its parts and what calls what |
-| a `src/` directory | an import graph, with the cycles marked |
-| `.tf` files, or the output of `terraform graph` | the Terraform layers and the order they apply in |
-| Kubernetes manifests | the path of a request, load balancer to pod |
-| classes and migrations | the types beside the tables that store them |
-| a Mermaid block | the same diagram, redrawn in D2 |
+| Point it at | Ask for | You get |
+|---|---|---|
+| the whole repository | architecture | services, stores and queues as boxes, calls as arrows |
+| `src/` | dependency diagram | one node per module, an edge per import, cycles in orange |
+| `src/` | class diagram | classes with their fields and methods, inheritance and use |
+| `.tf` files or `terraform graph` | resource diagram | every resource and the dependencies between them |
+| a layered Terraform repo | apply-order diagram | one box per root module, edges from remote-state reads |
+| SQL migrations, `CREATE TABLE`, ORM models | ER diagram | tables with typed columns, `PK`/`FK` markers, `1 : N` edges |
+| Kubernetes and Ingress manifests | request path | the hops from load balancer to pod, with the condition each needs |
+| a state machine in code | state diagram | states as boxes, transitions as labelled arrows |
+| a Mermaid or Graphviz source | a redraw | the same graph in D2, laid out and styled |
 
 It cannot draw charts over numbers, Venn diagrams, pyramids, funnels, radars or
 treemaps — anything whose meaning lives in a coordinate or an area. D2 places
