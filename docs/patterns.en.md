@@ -133,15 +133,30 @@ two nodes. Quote any label with punctuation in it.
 fails, so "the file exists" proves nothing.
 
 **PNG export can fail on the machine, not in the diagram.** `d2 x.d2 x.png`
-downloads a Playwright driver; on linux/arm64 that download currently 404s.
-Render an SVG into `/tmp` and screenshot it with a headless browser instead:
+downloads a Playwright driver first, and that download is dead on every
+platform: `playwright.azureedge.net` is retired, and the host that replaced it
+answers with a redirect the Go client inside D2 does not follow. Render an SVG
+into `/tmp` and rasterize it with `rsvg-convert` (librsvg, `apt install
+librsvg2-bin`):
 
 ```bash
 d2 cluster.d2 /tmp/cluster.svg
-chrome --headless --disable-gpu --no-sandbox --hide-scrollbars \
-  --force-device-scale-factor=2 --window-size=2400,1000 \
-  --screenshot=docs/diagrams/cluster.png "file:///tmp/cluster.svg"
+rsvg-convert -z 2 /tmp/cluster.svg -o docs/diagrams/cluster.png
 ```
+
+**librsvg has to be pointed at the font.** D2 embeds the font as a data URL in
+`@font-face`, which librsvg ignores; it then measures the labels in whatever
+sans it happens to have, and they stop fitting the boxes D2 sized for them —
+under DejaVu, `unit_price_cents` ran into `bigint`. What D2 embeds is a cut-down
+Source Sans Pro carrying only the glyphs used, renamed per diagram, so install a
+Source Sans (`apt install fonts-adobe-sourcesans3`) and repoint the four text
+classes at it before rasterizing. `render.sh` does this: the family name is
+quoted only in the class rules and never in the `@font-face` blocks, which is
+what makes a `sed` safe here.
+
+**A headless browser still works.** `render.sh` uses one when there is no
+librsvg, and `D2_BROWSER` forces that path. It is only the heavier way round — a
+whole browser for one conversion.
 
 **ImageMagick is not a substitute.** `convert x.svg x.png` "works" and drops
 every CSS fill, producing a grayscale image — useless for checking a diagram.

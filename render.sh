@@ -10,7 +10,7 @@
 # sha256 of each source and of the picture built from it, so the test suite can
 # say which pair has drifted apart. It compares hashes of the *inputs*, not of
 # the images: a PNG is not reproducible across machines, since it comes out of
-# whatever headless browser is at hand.
+# whatever rasterizer is at hand.
 #
 # theme.d2 is hashed into every entry, because changing it changes every picture.
 set -euo pipefail
@@ -21,25 +21,58 @@ THEME="$SRC/skill/references/theme.d2"
 MANIFEST="$EXAMPLES/.rendered"
 SCALE="${D2_RENDER_SCALE:-2}"
 
+# librsvg ignores the @font-face fonts D2 embeds as data URLs, so left alone it
+# falls back to whatever sans it finds and the text stops fitting the boxes D2
+# sized for it — measured: "unit_price_cents bigint" ran together under DejaVu.
+# What D2 embeds is a subset of Source Sans Pro, renamed per diagram, so the fix
+# is to point the four text classes at an installed Source Sans of the same
+# metrics. Only the class rules quote the family name; the @font-face blocks do
+# not, which is what makes the substitution safe to do with sed.
+D2_SANS="${D2_SANS:-Source Sans 3}"
+D2_MONO="${D2_MONO:-monospace}"
+
 CHECK_ONLY=0
 [ "${1:-}" = "--check" ] && CHECK_ONLY=1
 [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ] && { sed -n '2,16p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0; }
 
 sha() { sha256sum "$1" | cut -d' ' -f1; }
 
-# The browser that turns the scratch SVG into a raster. d2 can export PNG itself
-# but downloads a Playwright driver to do it, and that download 404s on
-# linux/arm64 — see docs/patterns.en.md.
-find_browser() {
+# What turns the scratch SVG into a raster. d2 can export PNG itself, but first
+# downloads a Playwright driver, and that download is dead on every platform:
+# playwright.azureedge.net is retired and its replacement answers a redirect the
+# Go client does not follow — see docs/patterns.en.md.
+#
+# rsvg-convert (librsvg) is preferred. It needs no browser and no driver cache,
+# and the SVG's own viewBox sets the canvas, so there is no window to size. A
+# headless browser stays as the fallback for a box that has one but no librsvg;
+# D2_BROWSER still forces that path.
+#
+# Prints "<kind> <path>", kind being rsvg or browser.
+find_rasterizer() {
 	local c
-	for c in "${D2_BROWSER:-}" \
-	         "$HOME/.cache/ms-playwright/chromium-1228/chrome-linux/chrome" \
+	if [ -n "${D2_BROWSER:-}" ]; then
+		printf 'browser %s\n' "$D2_BROWSER"
+		return 0
+	fi
+	if command -v rsvg-convert >/dev/null 2>&1; then
+		printf 'rsvg %s\n' "$(command -v rsvg-convert)"
+		return 0
+	fi
+	for c in "$HOME/.cache/ms-playwright/chromium-1228/chrome-linux/chrome" \
 	         chromium chromium-browser google-chrome; do
-		[ -n "$c" ] || continue
-		if [ -x "$c" ]; then printf '%s\n' "$c"; return 0; fi
-		if command -v "$c" >/dev/null 2>&1; then command -v "$c"; return 0; fi
+		if [ -x "$c" ]; then printf 'browser %s\n' "$c"; return 0; fi
+		if command -v "$c" >/dev/null 2>&1; then printf 'browser %s\n' "$(command -v "$c")"; return 0; fi
 	done
 	return 1
+}
+
+retarget_fonts() {
+	sed -E \
+		-e "s/font-family: \"d2-[0-9]+-font-regular\"/font-family: \"$D2_SANS\"/" \
+		-e "s/font-family: \"d2-[0-9]+-font-bold\"/font-family: \"$D2_SANS\"; font-weight: 700/" \
+		-e "s/font-family: \"d2-[0-9]+-font-italic\"/font-family: \"$D2_SANS\"; font-style: italic/" \
+		-e "s/font-family: \"d2-[0-9]+-font-mono\"/font-family: \"$D2_MONO\"/" \
+		"$1"
 }
 
 expected_line() {
@@ -72,13 +105,21 @@ check() {
 }
 
 render() {
-	local browser d2 name w h dims
+	local spec kind tool d2 name w h dims
 	if ! command -v d2 >/dev/null 2>&1; then
 		echo "d2 is not on PATH — cannot render" >&2
 		exit 3
 	fi
-	if ! browser="$(find_browser)"; then
-		echo "no headless browser found; set D2_BROWSER to one" >&2
+	if ! spec="$(find_rasterizer)"; then
+		echo "no rasterizer found; install librsvg2-bin for rsvg-convert, or set D2_BROWSER to a headless browser" >&2
+		exit 3
+	fi
+	kind="${spec%% *}"
+	tool="${spec#* }"
+	if [ "$kind" = rsvg ] && command -v fc-list >/dev/null 2>&1 &&
+		! fc-list : family 2>/dev/null | grep -qiF "$D2_SANS"; then
+		echo "the rsvg path needs the \"$D2_SANS\" font — apt install fonts-adobe-sourcesans3" >&2
+		echo "without it the labels are measured with the wrong metrics and overflow their boxes" >&2
 		exit 3
 	fi
 
@@ -94,9 +135,14 @@ render() {
 		fi
 		dims="$(sed -n 's/.*viewBox="0 0 \([0-9]*\) \([0-9]*\)".*/\1 \2/p' "/tmp/$name.svg" | head -1)"
 		w="${dims% *}"; h="${dims#* }"
-		"$browser" --headless --disable-gpu --no-sandbox --hide-scrollbars \
-			--force-device-scale-factor="$SCALE" --window-size="$w,$h" \
-			--screenshot="$EXAMPLES/$name.png" "file:///tmp/$name.svg" >/dev/null 2>&1
+		if [ "$kind" = rsvg ]; then
+			retarget_fonts "/tmp/$name.svg" > "/tmp/$name.rsvg.svg"
+			"$tool" -z "$SCALE" "/tmp/$name.rsvg.svg" -o "$EXAMPLES/$name.png"
+		else
+			"$tool" --headless --disable-gpu --no-sandbox --hide-scrollbars \
+				--force-device-scale-factor="$SCALE" --window-size="$w,$h" \
+				--screenshot="$EXAMPLES/$name.png" "file:///tmp/$name.svg" >/dev/null 2>&1
+		fi
 		printf '%-28s %sx%s  ratio %s\n' "$name" "$w" "$h" \
 			"$(awk -v a="$w" -v b="$h" 'BEGIN{printf "%.2f", a/b}')"
 		expected_line "$d2" >> "$MANIFEST.tmp"

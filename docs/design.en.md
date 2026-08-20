@@ -56,8 +56,8 @@ So the committed artefact is a PNG, embedded wrapped in a link to itself:
 The click then opens GitHub's image viewer at full resolution. The PNG is
 rendered at 2× so that view is sharp.
 
-SVG survives only as an intermediate: `d2` renders one, a headless browser
-screenshots it, the PNG is kept and the SVG is dropped in `/tmp`. Where `d2
+SVG survives only as an intermediate: `d2` renders one, `rsvg-convert`
+rasterizes it, the PNG is kept and the SVG is dropped in `/tmp`. Where `d2
 x.d2 x.png` works directly there is no SVG at all.
 
 A second reason not to commit it: two rendered files claiming to be the same

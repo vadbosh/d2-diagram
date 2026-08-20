@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.3.0 — 2026-08-20
+
+### Changed
+
+- **`render.sh` rasterizes with `rsvg-convert` instead of a headless browser.**
+  The old path was never a choice, it was a workaround: D2's own PNG export
+  downloads a Playwright driver, and that download is now dead on every platform
+  — `playwright.azureedge.net` is retired, and the host that replaced it answers
+  with a redirect the Go client inside D2 does not follow, so pointing
+  `PLAYWRIGHT_DOWNLOAD_HOST` at it turns the 404 into a 400. The previous note
+  blaming `linux/arm64` was too narrow. librsvg needs no browser and no driver
+  cache, and the SVG's own `viewBox` sets the canvas, so there is no window to
+  size. A headless browser stays as the fallback, and `D2_BROWSER` still forces
+  it.
+- **The scratch SVG is repointed at an installed font before rasterizing.**
+  librsvg ignores the `@font-face` data URLs D2 embeds, so left alone it
+  measured the labels in DejaVu and they stopped fitting the boxes D2 had sized
+  — `unit_price_cents` ran into `bigint` in the gallery. What D2 embeds is a
+  cut-down Source Sans Pro renamed per diagram, so no fontconfig alias can catch
+  it; `render.sh` rewrites the four text classes to `$D2_SANS` (default
+  `Source Sans 3`) and refuses to run when that font is absent rather than
+  producing a quietly wrong picture.
+- **The gallery was re-rendered** through the new path. Same pixel dimensions as
+  the browser produced, RMSE 4–6% from antialiasing, no layout shift.
+
 ## 0.2.0 — 2026-08-18
 
 The release that stopped taking its own word for things. Every capability the

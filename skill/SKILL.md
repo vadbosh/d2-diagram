@@ -3,7 +3,7 @@ name: d2-diagram
 description: Draw architecture, dependency, class, network and flow diagrams as D2 source rendered to PNG. Use when asked to draw, diagram, visualize or map anything structural — infrastructure (Terraform layers, EKS/VPC topology, Kubernetes workloads, CI pipelines, request paths) as well as code (module and import graphs, class relations, call flows, data models, state machines) — when a diagram must live in git next to the code, or when Mermaid output looks too crude for the destination. Also use to redraw an existing Mermaid or Graphviz dot source at higher quality.
 license: MIT
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
   base: adapted from github.com/fmind/dotfiles/tree/main/skills/d2 (MIT)
 ---
 
@@ -17,7 +17,8 @@ Both engines ship inside the binary: `dagre` (the Dagre directed-graph library, 
 **Two files per diagram, and only two: `<name>.d2` and `<name>.png`.** SVG is never a deliverable
 here and never gets committed — see [What ships](#what-ships) before rendering anything.
 
-`d2` is installed at `/usr/local/bin/d2` (v0.7.1, linux/arm64).
+`d2` is installed at `/usr/local/bin/d2` (v0.7.1). Rasterizing also needs `rsvg-convert` and a
+Source Sans — `apt install librsvg2-bin fonts-adobe-sourcesans3`.
 
 ## Choose the tool first
 
@@ -41,6 +42,7 @@ D2 when the diagram is a maintained artifact. Mermaid when the renderer is not y
    d2 fmt cluster.d2
    d2 validate cluster.d2
    d2 cluster.d2 /tmp/cluster.svg     # scratch only — /tmp, never the repo
+   rsvg-convert -z 2 /tmp/cluster.svg -o docs/diagrams/cluster.png
    ```
 
 5. **Trust the exit code, not the presence of the file** — D2 leaves a partial render after an error.
@@ -191,7 +193,7 @@ of this skill assumes.
 
 **SVG is not a deliverable — it is an intermediate.** The only reason it exists at all is that D2's
 own PNG export is broken on this box (see [Rasterizing](#rasterizing--png-export-is-broken-on-this-box)),
-so the pipeline is `.d2` → scratch `.svg` → screenshot → `.png`. Write that SVG under `/tmp` and let
+so the pipeline is `.d2` → scratch `.svg` → `rsvg-convert` → `.png`. Write that SVG under `/tmp` and let
 it die there. Where `d2 x.d2 x.png` works directly, there is no SVG at all.
 
 Two reasons it must not be committed, both hit in practice:
@@ -217,29 +219,58 @@ A PR diff of the `.d2` is readable; that is the whole point over a hand-written 
 `viewBox` after rendering and flip `direction:` (`right` ↔ `down`) until the ratio is near 1:1 —
 on the worked example that turned 4.57:1 into 0.55:1 with a one-word change.
 
-Render the PNG at 2× so the full-size click is sharp: `--force-device-scale-factor=2` with a window
-matching the `viewBox` of the scratch SVG.
+Render the PNG at 2× so the full-size click is sharp: `rsvg-convert -z 2` on the scratch SVG.
 
 ### Rasterizing — PNG export is broken on this box
 
-`d2 x.d2 x.png` fails: it tries to fetch a Playwright driver from `playwright.azureedge.net`,
-which returns 404 for `linux-arm64`. Do not retry it, and do not report it as a D2 bug.
+`d2 x.d2 x.png` fails: it tries to fetch a Playwright driver from `playwright.azureedge.net`, a host
+Microsoft has retired. The replacement (`cdn.playwright.dev/dbazure/download/playwright`) answers
+`307` to `playwright.download.prss.microsoft.com`, and the `playwright-go` downloader inside D2 does
+not follow that redirect — pointing `PLAYWRIGHT_DOWNLOAD_HOST` at it turns the `404` into a `400`,
+not into a working driver. Measured 2026-08-20 on `linux-amd64`; the older note blaming `arm64` was
+too narrow, the driver URL is dead for every platform. Do not retry it, and do not report it as a D2
+bug.
 
-Render a scratch SVG **into `/tmp`**, screenshot it with the Chromium already in the Playwright
-cache, keep the PNG, drop the SVG:
+Render a scratch SVG **into `/tmp`** and rasterize it with `rsvg-convert` (librsvg — `apt install
+librsvg2-bin`). No browser, no Playwright cache, no headless flags:
 
 ```bash
 d2 cluster.d2 /tmp/cluster.svg
-$HOME/.cache/ms-playwright/chromium-1228/chrome-linux/chrome \
-  --headless --disable-gpu --no-sandbox --hide-scrollbars \
-  --force-device-scale-factor=2 --window-size=2400,1000 \
-  --screenshot=docs/diagrams/cluster.png "file:///tmp/cluster.svg"
+rsvg-convert -z 2 /tmp/cluster.svg -o docs/diagrams/cluster.png
 ```
+
+`-z 2` is the 2× scale that keeps the full-size click sharp — it replaces the browser's
+`--force-device-scale-factor=2`, and unlike the browser path it needs no window size, because the
+SVG's own `viewBox` sets the canvas.
+
+**librsvg has to be pointed at the font, or the labels overflow.** D2 embeds the font as a data URL
+in `@font-face`; librsvg ignores those and measures the text in whatever sans it has, so the labels
+stop fitting the boxes D2 sized for them — under DejaVu, `unit_price_cents` ran into `bigint`. What
+D2 embeds is a cut-down Source Sans Pro carrying only the glyphs used, renamed per diagram
+(`d2-<hash>-font-regular`), so no fontconfig alias can catch it. Install a Source Sans and repoint
+the four text classes at it before rasterizing:
+
+```bash
+apt install fonts-adobe-sourcesans3 librsvg2-bin
+d2 cluster.d2 /tmp/cluster.svg
+sed -E 's/font-family: "d2-[0-9]+-font-regular"/font-family: "Source Sans 3"/' \
+  /tmp/cluster.svg > /tmp/cluster.fixed.svg
+rsvg-convert -z 2 /tmp/cluster.fixed.svg -o docs/diagrams/cluster.png
+```
+
+The family name is quoted only in the class rules and never in the `@font-face` blocks, which is
+what makes that `sed` safe. Bold, italic and mono are three more classes with the same shape; add
+`font-weight: 700` and `font-style: italic` when substituting them.
+
+Checked against the old browser render of the same source: identical pixel dimensions, RMSE 4–6%
+from antialiasing alone, no layout shift.
 
 This is the one legitimate use of SVG in this skill. It never reaches the repository.
 
-Then `Read /tmp/shot.png` to actually look at it. `convert`/ImageMagick also "works" but drops all
-CSS fills and produces a grayscale image — useless for checking a diagram.
+Then `Read` the PNG to actually look at it. Two rasterizers that are **not** substitutes:
+`convert`/ImageMagick drops all CSS fills and produces a grayscale image; a headless Chromium
+screenshot works but pulls a browser onto the box for one conversion — use it only where a
+Playwright cache already exists.
 
 `--window-size` sets the canvas; too small crops, too large leaves whitespace. Iterate once.
 
