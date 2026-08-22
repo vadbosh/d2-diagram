@@ -3,7 +3,7 @@ name: d2-diagram
 description: Draw architecture, dependency, class, network and flow diagrams as D2 source rendered to PNG. Use when asked to draw, diagram, visualize or map anything structural — infrastructure (Terraform layers, EKS/VPC topology, Kubernetes workloads, CI pipelines, request paths) as well as code (module and import graphs, class relations, call flows, data models, state machines) — when a diagram must live in git next to the code, or when Mermaid output looks too crude for the destination. Also use to redraw an existing Mermaid or Graphviz dot source at higher quality.
 license: MIT
 metadata:
-  version: "0.3.2"
+  version: "0.3.3"
   base: adapted from github.com/fmind/dotfiles/tree/main/skills/d2 (MIT)
 ---
 
@@ -73,8 +73,12 @@ the `.d2` — it is in what the layout engine did with it. `d2 validate` cannot 
 **Look at the top edge of every container.** This is where the one recurring defect lives: D2 centres
 a container's title on its top border, and `dagre` routes an incoming edge into the top of that same
 container. The two collide, and the arrow is drawn straight through the title. Two of the four
-diagrams in `examples/` shipped like that — in one, the arrow replaced the em-dash in
-`Kubernetes — namespace gateway-system` and read as punctuation.
+two diagrams in the gallery this skill comes from shipped like that — in one, the arrow replaced
+the em-dash in `Kubernetes — namespace gateway-system` and read as punctuation.
+
+Switching the layout engine does not help. Measured on 0.7.1 against a diagram built to collide:
+`dagre` and `elk` both draw the edge through the title. `elk` is worth trying for other reasons —
+see [Syntax](#syntax-that-covers-most-infra-diagrams) — but not for this.
 
 The collision happens when the title still occupies the horizontal middle of the container, which is
 where the edge comes in. So:
@@ -113,9 +117,24 @@ magick diagram.png -crop 1400x140+120+1930 +repage /tmp/check.png   # w x h + x 
 
 Also worth a look, in order of how often they bite: labels touching or crossing the border of their
 own box; edges that pass under an unrelated container instead of around it; and a label sitting on
-top of another where two edges converge. `render.sh` prints the aspect ratio of every picture it
-builds — a number far from 1 is the cue to flip `direction:`, as
+top of another where two edges converge. And the aspect ratio: divide the `viewBox` width by its
+height, and a number far from 1 is the cue to flip `direction:`, as
 [Aspect ratio](#rendering-and-destination) explains.
+
+**Nothing here tells you the diagram is true.** The check reads geometry; a picture can be
+flawless and still draw a dependency that does not exist, or miss the one that matters. That is
+what step 1 of the [Workflow](#workflow) is for — read the source, never memory — and it is the one
+part no tool verifies.
+
+**Corrections are descriptive, because D2 is.** There is no way to nudge a box: you change what the
+diagram says and let the engine re-solve. The whole set of levers:
+
+| What went wrong | What to change |
+|---|---|
+| title under an incoming edge | shorter title, `label.near: top-left`, usually both |
+| a column instead of a screenful | `direction: right` ↔ `down` |
+| too many edges to follow | fewer nodes, or two diagrams — see [Node budget](#node-budget) |
+| the wrong thing stands out | a different `class` — `spine`, `focus`, `zone` |
 
 ## Node budget
 
@@ -318,9 +337,8 @@ not into a working driver. Measured 2026-08-20 on `linux-amd64`; the older note 
 too narrow, the driver URL is dead for every platform. Do not retry it, and do not report it as a D2
 bug.
 
-`render.sh` in this repository is the whole procedure and the reason to prefer it: `d2` to a scratch
-SVG in `/tmp`, repoint the fonts, `rsvg-convert -z 2`, PNG next to the source. No browser, no
-Playwright cache, no headless flags.
+The whole procedure is four steps: `d2` to a scratch SVG in `/tmp`, repoint the fonts,
+`rsvg-convert -z 2`, PNG next to the source. No browser, no Playwright cache, no headless flags.
 
 `-z 2` is the 2× scale that keeps the full-size click sharp — it replaces the browser's
 `--force-device-scale-factor=2`, and unlike the browser path it needs no window size, because the
@@ -350,8 +368,8 @@ rsvg-convert -z 2 /tmp/cluster.fixed.svg -o docs/diagrams/cluster.png
 ```
 
 The family name is quoted only in the class rules and never in the `@font-face` blocks, which is
-what makes that `sed` safe. `render.sh` runs exactly this — reach for it rather than retyping the
-four expressions.
+what makes that `sed` safe. All four expressions, every time — the one that is easy to drop is
+`-font-bold`, and it is the one that matters, because D2 sets shape labels in bold.
 
 Checked against the old browser render of the same source: identical pixel dimensions, RMSE 4–6%
 from antialiasing alone, no layout shift.

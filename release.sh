@@ -115,7 +115,7 @@ check() {
 		[ -n "$tok" ] || continue
 		echo "  shipped leak:      SKILL.md mentions $tok — exists here, never installed"
 		leak=1
-	done < <(grep -oE '(\./)?(release\.sh|install\.sh|uninstall\.sh|CHANGELOG\.md|CONTRIBUTING\.md|tests/)' "$SKILL" | sort -u || true)
+	done < <(grep -oE '(\./)?(release\.sh|install\.sh|uninstall\.sh|render\.sh|CHANGELOG\.md|CONTRIBUTING\.md|tests/|examples/|lib/)' "$SKILL" | sort -u || true)
 	[ "$leak" -eq 0 ] && echo "  shipped content:   no references to files that do not travel with the skill"
 	problems=$((problems + leak))
 

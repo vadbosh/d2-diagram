@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.3.3 — 2026-08-22
+
+### Fixed
+
+- **The skill pointed at four things an installed copy does not have.** Only
+  `SKILL.md`, `references/` and `scripts/` travel into an assistant, and the
+  text referred to `render.sh` three times and to `examples/` once. An agent
+  following it would reach for a file that is not there. The rasterizing
+  procedure is spelled out inline instead, and the gallery is described rather
+  than cited.
+
+- **`release.sh` could not have caught that.** Its leak check knew about
+  `install.sh`, `tests/` and the rest, but not `render.sh`, `examples/` or
+  `lib/` — the three that had actually leaked. Added.
+
+### Added
+
+- **Switching the layout engine does not avoid the label collision.** Measured
+  on 0.7.1 against a diagram built to collide: `dagre` and `elk` both draw the
+  edge through the title. Worth saying, because the same document recommends
+  `elk` for layered infrastructure and it reads like a lever here. It is not.
+
+- **What the check cannot do.** It reads geometry. A picture can be flawless and
+  still draw a dependency that does not exist, or miss the one that matters —
+  which is what step 1 of the workflow is for, and the one part no tool
+  verifies.
+
+- **The table of corrections**, in one place: a title under an incoming edge, a
+  column instead of a screenful, too many edges, the wrong thing standing out —
+  and the source-level knob for each. D2 takes no coordinates by design, so a
+  correction changes what the diagram says and lets the engine re-solve; the
+  levers were scattered across four sections and are now also collected where
+  the render is being judged.
+
 ## 0.3.2 — 2026-08-22
 
 ### Added
