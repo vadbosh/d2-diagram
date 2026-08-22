@@ -84,6 +84,41 @@ turned a 3521×770 monitoring diagram into 1128×2060: same content, same source
 readable inline. Check the `viewBox` after rendering, not the picture in your
 head.
 
+## A defect that exists only in the output
+
+The layout engine decides where everything goes. That is the point of D2, and it
+is also why a whole class of defect cannot be seen in the `.d2` at all: the
+source is correct, the picture is not, and `d2 validate` has nothing to object
+to.
+
+The one that keeps happening: D2 centres a container's title on its top border,
+and the engine routes an incoming edge into the top of that same container. The
+arrow is drawn through the text. In one diagram here it replaced the em-dash in
+`Kubernetes — namespace gateway-system` and read as punctuation.
+
+Choosing the other engine does not help — measured on 0.7.1 against a diagram
+built to collide, `dagre` and `elk` both draw through the title. What does help
+is a title that leaves the middle of the container free, since the middle is
+where the edge comes in: shorten it, move it with `label.near: top-left`, or
+both.
+
+Looking at the picture does not catch it. Four diagrams in this gallery were
+read at full size by someone who had just spent an hour on this exact defect;
+two of the four were called clean and both were crossed. At that scale a 2 px
+line across a label is invisible.
+
+So it is checked arithmetically instead. `scripts/check_labels.py` walks the
+SVG, measures every node and container label with the font the picture will
+actually be drawn in, and reports any edge path that passes through one. It
+lives inside `skill/` rather than beside `render.sh`, because only the skill
+directory reaches an assistant — a check kept in the repository would be a check
+the agent drawing your diagram does not have.
+
+**It reads geometry and nothing else.** A diagram can pass it and still draw a
+dependency that does not exist, or leave out the one that matters. That is what
+reading the real source before drawing is for, and it is the one part of this
+that no tool verifies.
+
 ## Where this stops working
 
 D2 places nodes with a layout engine. **Anything whose meaning lives in a

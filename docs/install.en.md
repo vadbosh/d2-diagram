@@ -121,6 +121,45 @@ install -m 0755 "d2-$tag/bin/d2" ~/.local/bin/d2
 Adjust `linux-arm64` to your platform: the assets are named `linux-amd64`,
 `macos-amd64` and `macos-arm64`.
 
+## The rest of the toolchain
+
+`d2` alone writes an SVG and stops. Everything that turns that into a picture a
+reader can look at is a separate package, and for a long time nothing said so:
+the skill mentioned `apt install` in prose and the installer checked for `d2`
+only. A machine with the binary and nothing else produced no picture at all, or
+one with the wrong font metrics — and in both cases the skill looked like the
+thing at fault.
+
+The installer now reports the whole chain:
+
+```
+rsvg-convert found: /usr/bin/rsvg-convert
+Source Sans 3 found
+ImageMagick found
+uv found — the label check gets fontTools through it, nothing installed
+```
+
+and prints one `apt install` line for whatever is missing.
+
+| Needed for | Missing means |
+|---|---|
+| `rsvg-convert` — `librsvg2-bin` | nothing rasterizes |
+| Source Sans 3 — `fonts-adobe-sourcesans3` | librsvg ignores the font D2 embeds and falls back to its own, so labels lose their weight and outgrow the boxes D2 sized for them |
+| ImageMagick | no way to crop a strip and read it at 1:1, which is how the defects that survive rendering get caught |
+| `fontTools` | the label check estimates text widths instead of measuring them |
+
+**It reports, it does not install.** These are system packages and the installer
+writes only into `$HOME` — it is not going to call `apt` on your behalf.
+
+`fontTools` is the odd one. Debian refuses `pip install` into the system Python
+(PEP 668), and `pipx` installs applications rather than importable libraries, so
+neither gives the script what it needs. `uv run --no-project --with fonttools`
+does: the library comes from a cache for the length of one command and nothing
+is installed. `apt install python3-fonttools` works too, if you would rather
+have it system-wide. With neither, the check still runs — it estimates widths,
+deliberately narrow, so a missing dependency loses findings rather than
+inventing them, and it says on stderr which mode it used.
+
 ## Verifying
 
 ```bash

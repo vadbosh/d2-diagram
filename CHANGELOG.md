@@ -1,5 +1,56 @@
 # Changelog
 
+## 0.3.4 — 2026-08-22
+
+### Added
+
+- **The last three releases reached `docs/` — in both languages at once.**
+  `SKILL.md` had them and the manuals did not, which is the drift that costs
+  most: nobody re-reading the prose ever finds it.
+
+  `design` gains "a defect that exists only in the output" — why an edge through
+  a container title cannot be seen in the `.d2`, why choosing the other layout
+  engine does not help, why reading the picture does not catch it either, and
+  why the check ships inside `skill/` rather than beside the other scripts.
+  Including what it cannot do: it reads geometry, so a diagram can pass it and
+  still draw a dependency that does not exist.
+
+  `install` gains "the rest of the toolchain" — `rsvg-convert`, Source Sans 3,
+  ImageMagick and `fontTools`, what each one's absence actually costs, and why
+  the installer reports them rather than installing them. With the `fontTools`
+  story in full: Debian refuses `pip install` into the system Python, `pipx`
+  installs applications rather than importable libraries, and
+  `uv run --no-project --with fonttools` is what leaves nothing behind.
+
+  Checked mechanically across all four EN/RU pairs — fifteen facts counted in
+  both versions, zero divergence; no broken links or anchors outside code
+  blocks; no stray characters; no real paths in the examples.
+
+### Fixed
+
+- **The toolchain report assumed Debian.** It printed `sudo apt install` on any
+  system and named Debian packages, so on Fedora or macOS it was a command that
+  does not exist naming packages that do not exist. The detection was always
+  fine — it asks whether the *command* is there — so only the advice was wrong,
+  which is the better half to have broken.
+
+  Now: apt and Homebrew get an exact command, and everything else gets the plain
+  list of what is missing plus a note that names differ per distribution. Only
+  those two are filled in because only those two were tried; guessing at the
+  rest reads as authority it has not earned. Homebrew takes two lines when the
+  font is among the missing — it is a cask, and `brew install` will not take a
+  cask and a formula together.
+
+- **The font check reported "missing" where it could only say "cannot tell".**
+  fontconfig is not a given: on macOS it arrives with librsvg rather than with
+  the system, and a font installed through Font Book is invisible to it. With no
+  `fc-list` the answer is now that it cannot tell, because a false alarm here
+  sends someone installing a font they already have.
+
+- **`printf '--cask …'` was read as an option**, so the Homebrew font name came
+  out empty. Every name is emitted with `printf '%s'` now. Found by exercising
+  the Homebrew branch by hand rather than assuming it was too simple to fail.
+
 ## 0.3.3 — 2026-08-22
 
 ### Fixed

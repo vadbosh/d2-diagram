@@ -266,25 +266,72 @@ install_d2() {
 #
 # Reported, not installed. These are system packages and this installer writes
 # only into $HOME — it is not going to call apt behind your back.
+# What the missing pieces are called, per package manager. The detection above
+# never uses this — it asks whether the *command* is there — so a wrong name
+# here degrades the advice, not the diagnosis. Only apt and brew are filled in,
+# because those are the two that were tried; anything else gets the plain list
+# and is left to name the packages itself, which is more honest than guessing.
+pkg_name() {
+	# `printf '%s'` and not `printf "$name"`: a value starting with a dash is
+	# read as an option otherwise, which is exactly what happened to the
+	# Homebrew cask.
+	case "$1:$2" in
+		apt:rsvg)       printf '%s' 'librsvg2-bin' ;;
+		apt:font)       printf '%s' 'fonts-adobe-sourcesans3' ;;
+		apt:magick)     printf '%s' 'imagemagick' ;;
+		apt:fonttools)  printf '%s' 'python3-fonttools' ;;
+		brew:rsvg)      printf '%s' 'librsvg' ;;
+		brew:font)      printf '%s' 'font-source-sans-3' ;;
+		brew:magick)    printf '%s' 'imagemagick' ;;
+		brew:fonttools) printf '%s' 'fonttools' ;;
+		*)              printf '' ;;
+	esac
+}
+
+# apt and brew get an exact command; everything else gets told what is needed.
+pkg_manager() {
+	if [ "$(uname -s)" = "Darwin" ] && command -v brew >/dev/null 2>&1; then
+		printf 'brew'
+	elif command -v apt-get >/dev/null 2>&1; then
+		printf 'apt'
+	else
+		printf ''
+	fi
+}
+
 check_toolchain() {
-	local missing=""
+	local missing_keys="" missing_words="" pm
+	pm="$(pkg_manager)"
+
+	need() {   # need <key> <human name>
+		missing_keys="$missing_keys $1"
+		missing_words="$missing_words, $2"
+	}
 
 	if command -v rsvg-convert >/dev/null 2>&1; then
 		say "rsvg-convert found: $(command -v rsvg-convert)"
 	else
-		say "rsvg-convert MISSING — render.sh cannot rasterize without it"
-		missing="$missing librsvg2-bin"
+		say "rsvg-convert MISSING — nothing rasterizes without it"
+		need rsvg "rsvg-convert"
 	fi
 
 	# Not `grep -q` here: it exits on the first match, fc-list gets SIGPIPE,
 	# and `pipefail` turns the pipeline's status into 141 — so the check
 	# reported the font missing on a machine that had it.
-	if fc-list 2>/dev/null | grep -i 'source sans 3' >/dev/null; then
+	#
+	# And fontconfig is not a given: on macOS it arrives with librsvg rather
+	# than with the system, and a font installed through Font Book is invisible
+	# to it. With no fc-list the honest answer is "cannot tell", not "missing" —
+	# a false alarm here sends someone installing a font they already have.
+	if ! command -v fc-list >/dev/null 2>&1; then
+		say "Source Sans 3 — cannot tell, no fc-list on this machine"
+		say "  the picture needs it; check by hand if labels come out wrong"
+	elif fc-list 2>/dev/null | grep -i 'source sans 3' >/dev/null; then
 		say "Source Sans 3 found"
 	else
 		say "Source Sans 3 MISSING — librsvg ignores the font D2 embeds and"
 		say "  falls back to whatever sans it has, so labels outgrow their boxes"
-		missing="$missing fonts-adobe-sourcesans3"
+		need font "the Source Sans 3 font"
 	fi
 
 	if command -v magick >/dev/null 2>&1 || command -v convert >/dev/null 2>&1; then
@@ -292,27 +339,62 @@ check_toolchain() {
 	else
 		say "ImageMagick MISSING — needed to crop a strip and read it at 1:1,"
 		say "  which is how the defects that survive rendering get caught"
-		missing="$missing imagemagick"
+		need magick "ImageMagick"
 	fi
 
 	# The label checker measures text with fontTools. Debian refuses
-	# `pip install` into the system Python (PEP 668), so uv is the path that
-	# needs nothing installed: `uv run --with fonttools` uses a cached
-	# throwaway environment. Without either, the checker estimates widths and
-	# says so — it degrades, it does not break.
+	# `pip install` into the system Python (PEP 668) and pipx installs
+	# applications rather than importable libraries, so uv is the path that
+	# needs nothing installed: `uv run --with fonttools` borrows it from a
+	# cache. Without either, the checker estimates widths and says so — it
+	# degrades, it does not break, which is why this one is not in `missing`.
 	if python3 -c 'import fontTools' >/dev/null 2>&1; then
 		say "fontTools importable — the label check measures text exactly"
 	elif command -v uv >/dev/null 2>&1; then
 		say "uv found — the label check gets fontTools through it, nothing installed"
 	else
 		say "neither fontTools nor uv — the label check will estimate widths"
-		say "  (apt install python3-fonttools, or install uv)"
+		if [ -n "$pm" ]; then
+			say "  install uv, or: $pm install $(pkg_name "$pm" fonttools)"
+		else
+			say "  install uv, or your distribution's fontTools package for python3"
+		fi
 	fi
 
-	if [ -n "$missing" ]; then
-		say ""
-		say "install the missing ones:  sudo apt install$missing"
-	fi
+	[ -n "$missing_keys" ] || return 0
+
+	say ""
+	case "$pm" in
+		apt)
+			local cmd="" key
+			for key in $missing_keys; do
+				cmd="$cmd $(pkg_name apt "$key")"
+			done
+			say "install the missing ones:  sudo apt install$cmd"
+			;;
+		brew)
+			# The font is a cask and the rest are formulae; Homebrew will not
+			# take both in one `install`, so it is two lines when both are
+			# missing.
+			local formulae="" key
+			for key in $missing_keys; do
+				[ "$key" = font ] && continue
+				formulae="$formulae $(pkg_name brew "$key")"
+			done
+			say "install the missing ones:"
+			[ -n "$formulae" ] && say "  brew install$formulae"
+			case " $missing_keys " in
+				*" font "*) say "  brew install --cask $(pkg_name brew font)" ;;
+			esac
+			;;
+		*)
+			# Names differ per distribution and only two were verified. Saying
+			# what is needed beats printing a command that does not exist here.
+			say "still needed:${missing_words#,}"
+			say "  package names differ per distribution — on Debian these are"
+			say "  librsvg2-bin, fonts-adobe-sourcesans3, imagemagick"
+			;;
+	esac
 }
 
 say ""
