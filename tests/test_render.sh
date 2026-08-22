@@ -93,5 +93,45 @@ else
 	no "every documented class exists in theme.d2"
 fi
 
+# 5. The label check, in both directions. A checker is only worth having if
+#    something proves it still detects — this one silently reported "nothing
+#    crossed" twice while being written, once because a regex could not follow
+#    nested <g>, and once because an edge id arrives HTML-escaped so `-&gt;`
+#    never matched `->`. The positive case is the one that catches that.
+label_checker() {
+	if python3 -c 'import fontTools' >/dev/null 2>&1; then
+		python3 "$SRC/skill/scripts/check_labels.py" "$@"
+	elif command -v uv >/dev/null 2>&1; then
+		uv run --no-project --with fonttools python3 "$SRC/skill/scripts/check_labels.py" "$@"
+	else
+		python3 "$SRC/skill/scripts/check_labels.py" "$@"
+	fi
+}
+
+FIXTURE="$SRC/tests/fixtures/label-collision.d2"
+if d2 "$FIXTURE" "$WORK/collision.svg" >/dev/null 2>&1 &&
+   ! label_checker "$WORK/collision.svg" >/dev/null 2>&1; then
+	ok "the label check detects an edge drawn through a title"
+else
+	no "the label check detects an edge drawn through a title"
+	echo "     the fixture is built to collide; a clean result means the checker is blind"
+fi
+
+gallery_svgs=""
+for d2src in "$SRC"/examples/*.d2; do
+	[ -e "$d2src" ] || continue
+	name="$(basename "$d2src" .d2)"
+	d2 "$d2src" "$WORK/$name.svg" >/dev/null 2>&1 || continue
+	gallery_svgs="$gallery_svgs $WORK/$name.svg"
+done
+# shellcheck disable=SC2086
+if label_checker $gallery_svgs >/dev/null 2>&1; then
+	ok "no edge crosses a label in the gallery"
+else
+	no "an edge crosses a label in the gallery"
+	# shellcheck disable=SC2086
+	label_checker $gallery_svgs 2>&1 | sed 's/^/     /'
+fi
+
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

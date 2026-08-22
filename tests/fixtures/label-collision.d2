@@ -1,0 +1,20 @@
+# A diagram built to fail the label check, so the check itself is testable.
+#
+# The defect it reproduces: D2 centres a container's title on its top border,
+# dagre routes an incoming edge into the top of that container, and the arrow
+# is drawn through the text. The title is deliberately wide enough to occupy
+# the middle, which is where the edge comes in.
+#
+# If tests/test_render.sh ever reports this file as clean, the checker has
+# stopped checking — that happened twice while it was being written, once
+# because a regex could not handle nested <g>, and once because an edge id
+# arrives HTML-escaped so `-&gt;` never matched `->`. Both times it found
+# nothing and said so cheerfully.
+
+source: sender
+
+target: "a container title wide enough to sit under the incoming edge" {
+  inner: something
+}
+
+source -> target.inner

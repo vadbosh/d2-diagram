@@ -117,7 +117,7 @@ render() {
 	kind="${spec%% *}"
 	tool="${spec#* }"
 	if [ "$kind" = rsvg ] && command -v fc-list >/dev/null 2>&1 &&
-		! fc-list : family 2>/dev/null | grep -qiF "$D2_SANS"; then
+		! fc-list : family 2>/dev/null | grep -iF "$D2_SANS" >/dev/null; then
 		echo "the rsvg path needs the \"$D2_SANS\" font — apt install fonts-adobe-sourcesans3" >&2
 		echo "without it the labels are measured with the wrong metrics and overflow their boxes" >&2
 		exit 3
@@ -149,6 +149,33 @@ render() {
 	done
 	mv "$MANIFEST.tmp" "$MANIFEST"
 	echo "stamped $MANIFEST"
+
+	# An edge drawn through a label survives compile, validate and rasterize,
+	# and is invisible at full-page scale. Two of these four pictures shipped
+	# that way. Checked here, on the scratch SVGs still in /tmp.
+	svgs=""
+	for d2 in "$EXAMPLES"/*.d2; do
+		[ -e "$d2" ] || continue
+		svgs="$svgs /tmp/$(basename "$d2" .d2).svg"
+	done
+	# shellcheck disable=SC2086
+	label_checker $svgs || echo "  ^ fix the source, then re-render" >&2
+}
+
+# The label checker needs fontTools to measure text exactly. Nothing is
+# installed system-wide for it: Debian refuses `pip install` into the system
+# Python (PEP 668), and `uv run --with` gives the same library in a cached
+# throwaway environment. Plain python3 first in case the distro package is
+# there, uv second, and the checker itself falls back to estimated widths when
+# neither is — it says so on stderr rather than pretending to be exact.
+label_checker() {
+	if python3 -c 'import fontTools' >/dev/null 2>&1; then
+		python3 "$SRC/skill/scripts/check_labels.py" "$@"
+	elif command -v uv >/dev/null 2>&1; then
+		uv run --no-project --with fonttools python3 "$SRC/skill/scripts/check_labels.py" "$@"
+	else
+		python3 "$SRC/skill/scripts/check_labels.py" "$@"
+	fi
 }
 
 if [ "$CHECK_ONLY" -eq 1 ]; then

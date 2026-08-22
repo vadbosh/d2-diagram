@@ -16,6 +16,7 @@ dns: "DNS A record\napp.example.com\noutside the cluster" {class: ext}
 
 cloud: "cloud provider" {
   class: zone
+  label.near: top-left
   nlb: "network load balancer\nlistener 443 to target port 10443\nmanaged by the load-balancer controller" {class: comp}
 }
 

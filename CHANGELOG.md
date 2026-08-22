@@ -1,5 +1,62 @@
 # Changelog
 
+## 0.3.2 — 2026-08-22
+
+### Added
+
+- **`scripts/check_labels.py` — the collision check, and it ships with the
+  skill.** An edge drawn through a label survives compile, validate and
+  rasterize; `d2 validate` cannot see it because it is not in the source. The
+  script walks the SVG, measures every node and container label with the real
+  font, and reports any edge path that crosses one — with the `magick` crop
+  that shows it.
+
+  It lives under `skill/` on purpose. Only `SKILL.md` and `references/` reach an
+  installed skill, so a check kept in the repository would have been a check the
+  agent drawing your diagram does not have.
+
+  Widths use `fontTools`. Nothing is installed system-wide for it: Debian
+  refuses `pip install` into the system Python (PEP 668), and
+  `uv run --no-project --with fonttools` borrows the library from a cache
+  instead. Without either, widths are estimated and the script says so — it
+  degrades rather than lying.
+
+- **`tests/fixtures/label-collision.d2`** and two cases in the suite: the
+  gallery must be clean, and the planted collision must be found. The second is
+  the one that matters. While being written this checker reported "nothing
+  crossed" twice on files that were visibly broken — once because a regex could
+  not follow nested `<g>`, once because an edge id arrives HTML-escaped so
+  `-&gt;` never matched `->`. Both times it was cheerful about it.
+
+### Fixed
+
+- **Two more edges through container titles, in diagrams that had been read and
+  called clean.** `cloud provider` in `cluster-request-path` and `PostgreSQL` in
+  `ts-domain-model` — both crossed, both missed by eye at full-page scale, both
+  found by the new check within a minute of it working. That is the argument for
+  having it.
+
+- **A font check that reported the opposite of the truth.** `fc-list | grep -q`
+  under `set -o pipefail`: `grep -q` exits at the first match, `fc-list` takes
+  SIGPIPE, the pipeline returns 141 and the `if` reads it as failure. The
+  installer announced Source Sans 3 missing on a machine that had it, and the
+  same shape sat in `render.sh` — working only because `fc-list : family` is
+  short enough to finish first.
+
+- **Step 4 of the workflow told you to run `render.sh`**, which is in the
+  repository and not in an installed skill. It now carries the full sequence
+  inline, `sed` included, which is what a skill without the repository around it
+  needs.
+
+### Changed
+
+- `install.sh` reports the rest of the toolchain — `rsvg-convert`, Source Sans 3,
+  ImageMagick, and how `fontTools` will be reached — with the `apt` line for
+  whatever is missing. It reports rather than installs: these are system
+  packages and this installer writes only into `$HOME`. Until now it checked for
+  `d2` alone, and a machine with d2 and nothing else produced no picture, or a
+  wrong one, and the skill looked like the thing at fault.
+
 ## 0.3.1 — 2026-08-22
 
 ### Fixed

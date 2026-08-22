@@ -3,7 +3,7 @@ name: d2-diagram
 description: Draw architecture, dependency, class, network and flow diagrams as D2 source rendered to PNG. Use when asked to draw, diagram, visualize or map anything structural — infrastructure (Terraform layers, EKS/VPC topology, Kubernetes workloads, CI pipelines, request paths) as well as code (module and import graphs, class relations, call flows, data models, state machines) — when a diagram must live in git next to the code, or when Mermaid output looks too crude for the destination. Also use to redraw an existing Mermaid or Graphviz dot source at higher quality.
 license: MIT
 metadata:
-  version: "0.3.1"
+  version: "0.3.2"
   base: adapted from github.com/fmind/dotfiles/tree/main/skills/d2 (MIT)
 ---
 
@@ -17,8 +17,14 @@ Both engines ship inside the binary: `dagre` (the Dagre directed-graph library, 
 **Two files per diagram, and only two: `<name>.d2` and `<name>.png`.** SVG is never a deliverable
 here and never gets committed — see [What ships](#what-ships) before rendering anything.
 
-`d2` is installed at `/usr/local/bin/d2` (v0.7.1). Rasterizing also needs `rsvg-convert` and a
-Source Sans — `apt install librsvg2-bin fonts-adobe-sourcesans3`.
+`d2` is installed at `/usr/local/bin/d2` (v0.7.1). It writes an SVG and stops; everything that turns
+that into a picture a reader can look at is a separate package —
+`apt install librsvg2-bin fonts-adobe-sourcesans3 imagemagick`. Check before drawing, not after —
+a missing one of these does not fail loudly, it produces a picture with the wrong font metrics.
+
+`scripts/check_labels.py` measures text with `fontTools`. Where it is not importable, run the
+script under `uv run --no-project --with fonttools`: that borrows the library without installing
+it, which matters because Debian refuses `pip install` into the system Python (PEP 668).
 
 ## Choose the tool first
 
@@ -41,14 +47,18 @@ D2 when the diagram is a maintained artifact. Mermaid when the renderer is not y
    ```bash
    d2 fmt cluster.d2
    d2 validate cluster.d2
-   ./render.sh cluster.d2             # scratch SVG in /tmp, PNG next to the source
+   d2 cluster.d2 /tmp/cluster.svg     # scratch only — /tmp, never the repo
+   sed -E \
+     -e 's/font-family: "d2-[0-9]+-font-regular"/font-family: "Source Sans 3"/' \
+     -e 's/font-family: "d2-[0-9]+-font-bold"/font-family: "Source Sans 3"; font-weight: 700/' \
+     -e 's/font-family: "d2-[0-9]+-font-italic"/font-family: "Source Sans 3"; font-style: italic/' \
+     /tmp/cluster.svg > /tmp/cluster.fixed.svg
+   rsvg-convert -z 2 /tmp/cluster.fixed.svg -o docs/diagrams/cluster.png
    ```
 
-   Use `render.sh`. Rasterizing by hand is two commands, and the second one has a step in it that
-   is easy to leave out — librsvg has to be pointed at the font first, or the labels lose their
-   weight and outgrow their boxes. `render.sh` does that; a bare `rsvg-convert` does not. If you
-   are rasterizing by hand anyway, copy the full sequence from
-   [Rasterizing](#rasterizing--png-export-is-broken-on-this-box), not the one-liner in your head.
+   The `sed` is not optional and not cosmetic — [Rasterizing](#rasterizing--png-export-is-broken-on-this-box)
+   is why. Skip it and every label falls back to librsvg's own sans: the weight is gone and the
+   text outgrows the boxes D2 sized for it.
 
 5. **Trust the exit code, not the presence of the file** — D2 leaves a partial render after an error.
 6. Look at the PNG before reporting it. An unread diagram is not a verified diagram — and look at
@@ -76,8 +86,26 @@ where the edge comes in. So:
 - **Two incoming edges** straddle the centre instead of hitting it, so a centred title gets clipped
   from both sides. There the fix is the title, not its position.
 
-**Crop before you judge.** At full-page scale a 2 px arrow crossing a label is invisible — the
-picture looks fine and is not. Cut the strip out and look at it at 1:1:
+**Check it mechanically. Do not rely on your eye for this one.** The check ships with the skill:
+
+```bash
+python3 scripts/check_labels.py /tmp/cluster.svg
+# or, where fontTools is not importable and uv is:
+uv run --no-project --with fonttools python3 scripts/check_labels.py /tmp/cluster.svg
+```
+
+It names the label, the edge crossing it, and the `magick` crop that shows it. Exit 1 means
+something crosses. Run it on the scratch SVG, before the PNG is worth looking at.
+
+Widths come from the real font when `fontTools` is importable and from an estimate when it is not;
+the estimate is deliberately narrow, so a missing dependency loses findings rather than inventing
+them. It says which mode it used on stderr.
+
+The check exists because reading the picture is not reliable. Two collisions in the gallery of the
+repository this skill comes from were looked at directly and called clean; the checker found them in
+the same files minutes later. At full-page scale a 2 px arrow crossing a label is invisible.
+
+**For everything the checker does not cover, crop before you judge:**
 
 ```bash
 magick diagram.png -crop 1400x140+120+1930 +repage /tmp/check.png   # w x h + x + y

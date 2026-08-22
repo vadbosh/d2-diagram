@@ -256,6 +256,68 @@ install_d2() {
 	esac
 }
 
+# ── the rest of the toolchain ───────────────────────────────────────────────
+# d2 alone writes an SVG and stops. Everything that turns that into a PNG a
+# reader can look at lives outside this repository, and until now nothing said
+# so: the skill mentioned `apt install` in prose and the installer never
+# checked. A machine that had d2 and nothing else produced no picture at all,
+# or a picture with the wrong font metrics, and the failure looked like the
+# skill being wrong.
+#
+# Reported, not installed. These are system packages and this installer writes
+# only into $HOME — it is not going to call apt behind your back.
+check_toolchain() {
+	local missing=""
+
+	if command -v rsvg-convert >/dev/null 2>&1; then
+		say "rsvg-convert found: $(command -v rsvg-convert)"
+	else
+		say "rsvg-convert MISSING — render.sh cannot rasterize without it"
+		missing="$missing librsvg2-bin"
+	fi
+
+	# Not `grep -q` here: it exits on the first match, fc-list gets SIGPIPE,
+	# and `pipefail` turns the pipeline's status into 141 — so the check
+	# reported the font missing on a machine that had it.
+	if fc-list 2>/dev/null | grep -i 'source sans 3' >/dev/null; then
+		say "Source Sans 3 found"
+	else
+		say "Source Sans 3 MISSING — librsvg ignores the font D2 embeds and"
+		say "  falls back to whatever sans it has, so labels outgrow their boxes"
+		missing="$missing fonts-adobe-sourcesans3"
+	fi
+
+	if command -v magick >/dev/null 2>&1 || command -v convert >/dev/null 2>&1; then
+		say "ImageMagick found"
+	else
+		say "ImageMagick MISSING — needed to crop a strip and read it at 1:1,"
+		say "  which is how the defects that survive rendering get caught"
+		missing="$missing imagemagick"
+	fi
+
+	# The label checker measures text with fontTools. Debian refuses
+	# `pip install` into the system Python (PEP 668), so uv is the path that
+	# needs nothing installed: `uv run --with fonttools` uses a cached
+	# throwaway environment. Without either, the checker estimates widths and
+	# says so — it degrades, it does not break.
+	if python3 -c 'import fontTools' >/dev/null 2>&1; then
+		say "fontTools importable — the label check measures text exactly"
+	elif command -v uv >/dev/null 2>&1; then
+		say "uv found — the label check gets fontTools through it, nothing installed"
+	else
+		say "neither fontTools nor uv — the label check will estimate widths"
+		say "  (apt install python3-fonttools, or install uv)"
+	fi
+
+	if [ -n "$missing" ]; then
+		say ""
+		say "install the missing ones:  sudo apt install$missing"
+	fi
+}
+
+say ""
+check_toolchain
+
 say ""
 if command -v d2 >/dev/null 2>&1; then
 	say "d2 found: $(command -v d2) $(d2 --version 2>/dev/null || true)"
