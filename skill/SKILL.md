@@ -3,7 +3,7 @@ name: d2-diagram
 description: Draw architecture, dependency, class, network and flow diagrams as D2 source rendered to PNG. Use when asked to draw, diagram, visualize or map anything structural — infrastructure (Terraform layers, EKS/VPC topology, Kubernetes workloads, CI pipelines, request paths) as well as code (module and import graphs, class relations, call flows, data models, state machines) — when a diagram must live in git next to the code, or when Mermaid output looks too crude for the destination. Also use to redraw an existing Mermaid or Graphviz dot source at higher quality.
 license: MIT
 metadata:
-  version: "0.3.0"
+  version: "0.3.1"
   base: adapted from github.com/fmind/dotfiles/tree/main/skills/d2 (MIT)
 ---
 
@@ -41,12 +41,53 @@ D2 when the diagram is a maintained artifact. Mermaid when the renderer is not y
    ```bash
    d2 fmt cluster.d2
    d2 validate cluster.d2
-   d2 cluster.d2 /tmp/cluster.svg     # scratch only — /tmp, never the repo
-   rsvg-convert -z 2 /tmp/cluster.svg -o docs/diagrams/cluster.png
+   ./render.sh cluster.d2             # scratch SVG in /tmp, PNG next to the source
    ```
 
+   Use `render.sh`. Rasterizing by hand is two commands, and the second one has a step in it that
+   is easy to leave out — librsvg has to be pointed at the font first, or the labels lose their
+   weight and outgrow their boxes. `render.sh` does that; a bare `rsvg-convert` does not. If you
+   are rasterizing by hand anyway, copy the full sequence from
+   [Rasterizing](#rasterizing--png-export-is-broken-on-this-box), not the one-liner in your head.
+
 5. **Trust the exit code, not the presence of the file** — D2 leaves a partial render after an error.
-6. Look at the PNG before reporting it. An unread diagram is not a verified diagram.
+6. Look at the PNG before reporting it. An unread diagram is not a verified diagram — and look at
+   it the way [Reading the render](#reading-the-render) says to, because the defects that survive
+   this far are the ones a whole-page view hides.
+
+## Reading the render
+
+A diagram that compiles, validates and rasterizes can still be wrong, and the wrongness is never in
+the `.d2` — it is in what the layout engine did with it. `d2 validate` cannot see any of this.
+
+**Look at the top edge of every container.** This is where the one recurring defect lives: D2 centres
+a container's title on its top border, and `dagre` routes an incoming edge into the top of that same
+container. The two collide, and the arrow is drawn straight through the title. Two of the four
+diagrams in `examples/` shipped like that — in one, the arrow replaced the em-dash in
+`Kubernetes — namespace gateway-system` and read as punctuation.
+
+The collision happens when the title still occupies the horizontal middle of the container, which is
+where the edge comes in. So:
+
+- **Short titles.** A title narrower than half the container leaves the middle free. `cloud provider`
+  never collided; `Kubernetes — namespace gateway-system` always did.
+- **`label.near: top-left`** moves the title into the corner — but only helps if the title is short
+  enough not to reach the middle anyway. Both together is what fixed the example.
+- **Two incoming edges** straddle the centre instead of hitting it, so a centred title gets clipped
+  from both sides. There the fix is the title, not its position.
+
+**Crop before you judge.** At full-page scale a 2 px arrow crossing a label is invisible — the
+picture looks fine and is not. Cut the strip out and look at it at 1:1:
+
+```bash
+magick diagram.png -crop 1400x140+120+1930 +repage /tmp/check.png   # w x h + x + y
+```
+
+Also worth a look, in order of how often they bite: labels touching or crossing the border of their
+own box; edges that pass under an unrelated container instead of around it; and a label sitting on
+top of another where two edges converge. `render.sh` prints the aspect ratio of every picture it
+builds — a number far from 1 is the cue to flip `direction:`, as
+[Aspect ratio](#rendering-and-destination) explains.
 
 ## Node budget
 
@@ -139,11 +180,29 @@ Fonts stay D2's bundled defaults — Source Sans Pro for text, Source Code Pro f
 that is what every example here was rendered with.
 
 There are eight override flags (`--font-regular`, `-italic`, `-bold`, `-semibold` and the same four
-with `-mono`), each with its own `D2_FONT_*` variable, and each falling back to its own default when
-unset. **Measured on 0.7.1, they do not change the output.** A missing path is rejected outright
-(`failed to read font at …`), but passing a real TTF — two different ones, and through the
-environment variable as well — produced an SVG byte-identical to the default render. Treat a custom
-family as unavailable until you have verified it on your own build.
+with `-mono`), each with its own `D2_FONT_*` variable. They do work — but not evenly. Measured on
+0.7.1, one flag at a time, on a two-node diagram:
+
+| flag | effect on the SVG |
+|---|---|
+| `--font-regular`, `D2_FONT_REGULAR` | **none, ever** — byte-identical output |
+| `--font-bold` | applied, and this is the one that matters |
+| `--font-italic` | applied |
+| `--font-semibold` | none here — nothing in the sample was semibold |
+| a path that does not exist | rejected outright: `failed to read font at …` |
+
+`--font-regular` is not a partial set falling back silently, it has nothing to act on. D2 emits
+**only two** `@font-face` blocks, bold and italic; there is no regular face at all, and plain text
+carries no `font-family`. Passing bold, italic and semibold *without* regular produces a file
+byte-identical to passing all four.
+
+Bold is the flag that counts, because D2 sets shape labels in it — every label carries
+`class="text-bold"`. Substituting it swaps the embedded WOFF subset for one cut from your file
+(4488 → 12592 bytes in the measured case).
+
+None of it reaches a PNG by itself. librsvg does not read those embedded faces, so a custom family
+lands in the SVG and vanishes from the picture unless the class rules are repointed first — see
+[Rasterizing](#rasterizing--png-export-is-broken-on-this-box).
 
 ## Syntax that covers most infra diagrams
 
@@ -231,36 +290,40 @@ not into a working driver. Measured 2026-08-20 on `linux-amd64`; the older note 
 too narrow, the driver URL is dead for every platform. Do not retry it, and do not report it as a D2
 bug.
 
-Render a scratch SVG **into `/tmp`** and rasterize it with `rsvg-convert` (librsvg — `apt install
-librsvg2-bin`). No browser, no Playwright cache, no headless flags:
-
-```bash
-d2 cluster.d2 /tmp/cluster.svg
-rsvg-convert -z 2 /tmp/cluster.svg -o docs/diagrams/cluster.png
-```
+`render.sh` in this repository is the whole procedure and the reason to prefer it: `d2` to a scratch
+SVG in `/tmp`, repoint the fonts, `rsvg-convert -z 2`, PNG next to the source. No browser, no
+Playwright cache, no headless flags.
 
 `-z 2` is the 2× scale that keeps the full-size click sharp — it replaces the browser's
 `--force-device-scale-factor=2`, and unlike the browser path it needs no window size, because the
 SVG's own `viewBox` sets the canvas.
 
-**librsvg has to be pointed at the font, or the labels overflow.** D2 embeds the font as a data URL
-in `@font-face`; librsvg ignores those and measures the text in whatever sans it has, so the labels
-stop fitting the boxes D2 sized for them — under DejaVu, `unit_price_cents` ran into `bigint`. What
-D2 embeds is a cut-down Source Sans Pro carrying only the glyphs used, renamed per diagram
-(`d2-<hash>-font-regular`), so no fontconfig alias can catch it. Install a Source Sans and repoint
-the four text classes at it before rasterizing:
+**librsvg has to be pointed at the font, or the labels lose their weight and outgrow their boxes.**
+D2 embeds the font as a data URL in `@font-face`; librsvg ignores those and measures the text in
+whatever sans it has, so the labels stop fitting the boxes D2 sized for them — under DejaVu,
+`unit_price_cents` ran into `bigint`. What D2 embeds is a cut-down Source Sans Pro carrying only the
+glyphs used, renamed per diagram (`d2-<hash>-font-bold`), so no fontconfig alias can catch it.
+
+Two things go wrong at once, and the second is the one that gets missed: shape labels are set in
+**bold**, so substituting only the regular class leaves every label in librsvg's fallback. Repoint
+all four classes, and restate the weight and the slant — in D2's own faces they live inside the font
+file, not in the CSS, so they are lost the moment the family changes:
 
 ```bash
 apt install fonts-adobe-sourcesans3 librsvg2-bin
 d2 cluster.d2 /tmp/cluster.svg
-sed -E 's/font-family: "d2-[0-9]+-font-regular"/font-family: "Source Sans 3"/' \
+sed -E \
+  -e 's/font-family: "d2-[0-9]+-font-regular"/font-family: "Source Sans 3"/' \
+  -e 's/font-family: "d2-[0-9]+-font-bold"/font-family: "Source Sans 3"; font-weight: 700/' \
+  -e 's/font-family: "d2-[0-9]+-font-italic"/font-family: "Source Sans 3"; font-style: italic/' \
+  -e 's/font-family: "d2-[0-9]+-font-mono"/font-family: "monospace"/' \
   /tmp/cluster.svg > /tmp/cluster.fixed.svg
 rsvg-convert -z 2 /tmp/cluster.fixed.svg -o docs/diagrams/cluster.png
 ```
 
 The family name is quoted only in the class rules and never in the `@font-face` blocks, which is
-what makes that `sed` safe. Bold, italic and mono are three more classes with the same shape; add
-`font-weight: 700` and `font-style: italic` when substituting them.
+what makes that `sed` safe. `render.sh` runs exactly this — reach for it rather than retyping the
+four expressions.
 
 Checked against the old browser render of the same source: identical pixel dimensions, RMSE 4–6%
 from antialiasing alone, no layout shift.

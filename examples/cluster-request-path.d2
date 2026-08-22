@@ -19,8 +19,9 @@ cloud: "cloud provider" {
   nlb: "network load balancer\nlistener 443 to target port 10443\nmanaged by the load-balancer controller" {class: comp}
 }
 
-k8s: "Kubernetes — namespace gateway-system" {
+k8s: "namespace gateway-system" {
   class: zone
+  label.near: top-left
 
   proxy: "gateway proxy pods\npods v1, labelled with the owning gateway" {class: spine}
 

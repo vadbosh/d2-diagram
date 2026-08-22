@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.3.1 — 2026-08-22
+
+### Fixed
+
+- **Two of the four gallery diagrams shipped with an arrow drawn through a
+  container's title.** D2 centres a container label on its top border and
+  `dagre` routes an incoming edge into the top of that same container, so the
+  two collide. In `cluster-request-path` the arrow replaced the em-dash in
+  `Kubernetes — namespace gateway-system` and read as punctuation; in
+  `ts-monorepo` two dashed edges straddled `outside the repository` and clipped
+  the last letter.
+
+  Fixed in the sources: a shorter title plus `label.near: top-left` for the
+  first, a shorter title for the second — where two edges straddle the centre,
+  moving the label into a corner walks it into one of them.
+
+- **The claim that the font override flags do nothing was wrong.** Measured
+  again, one flag at a time: `--font-bold` and `--font-italic` are applied and
+  their subsets end up embedded; `--font-regular` does nothing *ever*, because
+  D2 emits no regular face at all — bold and italic are the only two
+  `@font-face` blocks, and plain text carries no `font-family`. Passing bold,
+  italic and semibold without regular gives a file byte-identical to passing all
+  four. Shape labels are set in bold, which is why bold is the flag that counts.
+
+  The earlier note went from "all four together or it silently falls back" to
+  "none of them work". Neither was right, and the table now says which is which.
+
+- **The by-hand rasterizing recipe substituted only the regular class**, which
+  is the one class a typical diagram does not use. Following it left every label
+  in librsvg's fallback font — losing the weight and outgrowing the boxes, the
+  exact failure the surrounding paragraph warns about. It now repoints all four
+  classes and restates weight and slant, matching what `render.sh` has been
+  doing all along. Step 4 of the workflow points at `render.sh` instead of a
+  one-liner that skips the step.
+
+### Added
+
+- **"Reading the render"** — what to look at once the PNG exists, since `d2
+  validate` sees none of it. The container-title collision and its three fixes,
+  the habit of cropping a strip at 1:1 before judging (at full-page scale a 2 px
+  arrow crossing a label is invisible), and the shorter list of defects that
+  follow it.
+
 ## 0.3.0 — 2026-08-20
 
 ### Changed
