@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **The mirror check passed by not running.** `release.sh check` compares the
+  skill against the copies named in `D2_MIRRORS`, and an unset variable leaves
+  it nothing to compare: it prints `mirrors: none configured` and exits 0. On a
+  machine that does have a mirror, that line reads as a check that held. The
+  canon this repository feeds went unverified for exactly the drift the check
+  was written to catch.
+
+  `release.sh` now reads `.release.env` from the repository root when that file
+  is there. A path to a canon or a second checkout is true for one machine and
+  noise in a public repository, so the file is gitignored and the default is
+  unchanged: a clone without it behaves as before — `mirrors: none configured`,
+  exit 0, verified on a fresh clone of this repository. The file assigns
+  `${D2_MIRRORS:-…}`, so an exported `D2_MIRRORS` still wins and a caller can
+  override it per invocation.
+
 ## 0.3.4 — 2026-08-22
 
 ### Added

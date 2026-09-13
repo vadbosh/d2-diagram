@@ -29,6 +29,10 @@ AGENTS.md
 # Work notes about this repository — kept per checkout, not part of what ships.
 kb/
 
+# Per-machine settings read by release.sh — D2_MIRRORS points at a copy of the
+# skill that exists on this machine only.
+.release.env
+
 # Python bytecode.
 __pycache__/
 *.pyc

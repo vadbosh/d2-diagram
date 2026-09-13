@@ -16,6 +16,16 @@ SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL="$SRC/skill/SKILL.md"
 LOG="$SRC/CHANGELOG.md"
 
+# A machine that has a mirror says so here. .release.env is gitignored, so the
+# path stays out of the public repository while the check still runs by itself:
+# an unset D2_MIRRORS makes `check` print "none configured" and exit 0, which
+# reads like a check that passed on a machine where the mirror exists and is
+# simply not being compared.
+if [ -f "$SRC/.release.env" ]; then
+	# shellcheck source=/dev/null
+	. "$SRC/.release.env"
+fi
+
 # Machine-specific paths belong to the machine, not to a public repository.
 # D2_MIRRORS is a colon-separated list of directories holding a COPY of the
 # skill that install.sh does not write — a config canon that redistributes it,
