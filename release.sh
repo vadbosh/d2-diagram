@@ -12,6 +12,11 @@
 # changelog, which is exactly the failure this script exists to catch.
 set -euo pipefail
 
+# Not ${1/#$HOME/\~}: bash 3.2, the one macOS ships, keeps the backslash and
+# prints \~/.claude — measured in the bash:3.2 image.
+tilde() { case "$1" in "$HOME"*) printf '~%s' "${1#"$HOME"}" ;; *) printf '%s' "$1" ;; esac; }
+
+
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL="$SRC/skill/SKILL.md"
 LOG="$SRC/CHANGELOG.md"
@@ -62,7 +67,7 @@ check_mirrors() {
 		fi
 		[ "$behind" -eq 0 ] && echo "  mirrors behind:"
 		behind=$((behind + 1))
-		echo "    ${d/#$HOME/\~}  version ${mv:-none}$([ "$same" -eq 0 ] && echo ", content differs")"
+		echo "    $(tilde "$d")  version ${mv:-none}$([ "$same" -eq 0 ] && echo ", content differs")"
 	done <<-EOF
 	$(mirrors)
 	EOF
