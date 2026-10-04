@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.6 — 2026-10-04
+
+### Fixed
+
+- **README.RU.md reads as Russian in six places**, found by a docs-techwriter
+  review: «установщик откатывается к архиву» (*falls back*), «синий хребет»
+  (*blue spine*), «RESOURCE, которым он спрашивается», two dangling references
+  («это», «первое»), and a sentence nobody would say aloud. The English README
+  is unchanged.
+
 ## 0.3.5 — 2026-09-13
 
 ### Fixed
