@@ -11,6 +11,8 @@
 #   ./install.sh --with-d2        also install the d2 binary, without asking
 #   ./install.sh --no-d2          never install the binary, only report it
 #   ./install.sh --bin-dir D      put the binary in D instead of ~/.local/bin
+#   ./install.sh --skip-d2-checksum  install the binary even when SHA256SUMS
+#                                 is missing or has no line for the archive
 #
 # Idempotent: re-running rewrites only what differs. An existing copy of the
 # skill is saved to ~/.local/state/d2-skill-backups/<ide>-<timestamp>/ first —
@@ -20,7 +22,9 @@
 # The skill is useless without the d2 binary, so a missing one is offered for
 # installation: the latest release is taken from GitHub for this OS and
 # architecture. On a terminal you are asked first; without one, nothing is
-# downloaded unless --with-d2 was given. Nothing outside $HOME is touched.
+# downloaded unless --with-d2 was given. The archive is checked against the
+# release's SHA256SUMS before anything is installed. Nothing outside $HOME is
+# touched.
 set -euo pipefail
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -33,9 +37,10 @@ ONLY_IDE=""
 SKILLS_DIR=""
 BIN_DIR="${D2_BIN_DIR:-$HOME/.local/bin}"
 WANT_D2=ask          # ask | yes | no
+SKIP_CHECKSUM="${D2_SKIP_CHECKSUM:-0}"
 
 usage() {
-	sed -n '2,24p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+	sed -n '2,27p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 while [ $# -gt 0 ]; do
@@ -46,6 +51,7 @@ while [ $# -gt 0 ]; do
 		--with-d2) WANT_D2=yes ;;
 		--no-d2) WANT_D2=no ;;
 		--bin-dir) BIN_DIR="${2:-}"; shift ;;
+		--skip-d2-checksum) SKIP_CHECKSUM=1 ;;
 		-h|--help) usage; exit 0 ;;
 		*) echo "unknown option: $1" >&2; usage >&2; exit 2 ;;
 	esac
@@ -169,6 +175,57 @@ d2_latest_tag() {
 	fi
 }
 
+sha256_of() {
+	if command -v sha256sum >/dev/null 2>&1; then
+		sha256sum "$1" | awk '{print $1}'
+	elif command -v shasum >/dev/null 2>&1; then
+		shasum -a 256 "$1" | awk '{print $1}'
+	else
+		return 1
+	fi
+}
+
+# Check the downloaded archive against the SHA256SUMS published with the same
+# release. HTTPS alone says the bytes came from github.com, not that they are the
+# bytes upstream built: a replaced release asset would install silently. A hash
+# that does not match is refused always. A missing SHA256SUMS, or one with no line
+# for this archive, is refused unless --skip-d2-checksum (or D2_SKIP_CHECKSUM=1)
+# says to go on without the check — older releases shipped no sums at all.
+verify_d2_archive() {
+	local archive="$1" tag="$2" name="$3" tmp="$4" sums want got
+	sums="https://github.com/terrastruct/d2/releases/download/$tag/SHA256SUMS"
+	if curl -fsSL -o "$tmp/SHA256SUMS" "$sums"; then
+		want="$(awk -v n="$name" '$2 == n || $2 == "*" n { print $1; exit }' "$tmp/SHA256SUMS")"
+	else
+		want=""
+	fi
+	if [ -z "$want" ]; then
+		if [ "$SKIP_CHECKSUM" = "1" ]; then
+			say "no checksum for $name in $tag — installing unverified (--skip-d2-checksum)"
+			return 0
+		fi
+		say "no checksum for $name in $sums — refusing to install an unverified binary"
+		say "  rerun with --skip-d2-checksum to accept it, or install d2 by hand"
+		return 1
+	fi
+	if ! got="$(sha256_of "$archive")"; then
+		if [ "$SKIP_CHECKSUM" = "1" ]; then
+			say "neither sha256sum nor shasum is available — installing unverified (--skip-d2-checksum)"
+			return 0
+		fi
+		say "neither sha256sum nor shasum is available — cannot verify $name"
+		say "  rerun with --skip-d2-checksum to accept it, or install d2 by hand"
+		return 1
+	fi
+	if [ "$got" != "$want" ]; then
+		say "checksum mismatch for $name — refusing to install it"
+		say "  expected $want"
+		say "  got      $got"
+		return 1
+	fi
+	say "checksum ok: $name"
+}
+
 install_d2() {
 	local plat tag url tmp
 	# On macOS Homebrew is both shorter and ahead: the formula carried 0.8.1
@@ -217,10 +274,12 @@ install_d2() {
 	fi
 
 	tmp="$(mktemp -d)"
-	# Upstream publishes no checksums next to the tarballs, so there is nothing
-	# to verify against; the transport is HTTPS to github.com and that is all.
 	if ! curl -fsSL -o "$tmp/d2.tar.gz" "$url"; then
 		say "download failed — install d2 by hand: https://github.com/terrastruct/d2/releases"
+		rm -rf "$tmp"
+		return 1
+	fi
+	if ! verify_d2_archive "$tmp/d2.tar.gz" "$tag" "d2-$tag-$plat.tar.gz" "$tmp"; then
 		rm -rf "$tmp"
 		return 1
 	fi

@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.8 — 2026-10-09
+
+### Security
+
+- **`install.sh --with-d2` installed the d2 binary without checking it.** The
+  archive came over HTTPS from github.com and went straight into
+  `~/.local/bin`, so a replaced release asset would have installed silently. A
+  comment said upstream publishes no checksums; that held for v0.7.1, and
+  v0.9.0 ships `SHA256SUMS`. The installer now downloads it from the same
+  release and refuses an archive whose hash does not match. A release with no
+  checksum for the archive is refused too, unless `--skip-d2-checksum` (or
+  `D2_SKIP_CHECKSUM=1`) is given. Tested against v0.9.0 with a temporary
+  `HOME`: the real file passes; a `SHA256SUMS` with a wrong hash and a missing
+  `SHA256SUMS` are both refused, and nothing is installed.
+
 ## 0.3.7 — 2026-10-04
 
 ### Fixed

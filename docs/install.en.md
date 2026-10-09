@@ -31,6 +31,7 @@ than nothing, because it looks installed.
 | `--with-d2` | install the d2 binary too, without asking |
 | `--no-d2` | never touch the binary, only report whether it is there |
 | `--bin-dir D` | put the binary in `D` instead of `~/.local/bin` |
+| `--skip-d2-checksum` | install the binary even when the release has no checksum for it |
 | `-h`, `--help` | usage |
 
 `--skills-dir` is for a non-standard layout — a portable checkout, a container
@@ -99,24 +100,37 @@ The version is resolved from the GitHub *releases* endpoint, not from tags. A
 tag can exist upstream with no binaries attached — `v0.8.1` is exactly that —
 and building a download URL from it yields a 404.
 
-Upstream publishes no checksums next to the tarballs, so there is nothing to
-verify the download against; the transport is HTTPS to github.com and that is
-the whole guarantee.
+Before installing, the installer downloads `SHA256SUMS` from the same release and
+compares the hash of the archive with the line for it. A hash that does not
+match stops the install:
+
+```
+checksum mismatch for d2-v0.9.0-linux-amd64.tar.gz — refusing to install it
+```
+
+A release with no `SHA256SUMS`, or with no line for this archive, stops it too.
+When this installer was written against v0.7.1, upstream published no checksums;
+v0.9.0 does. For a release without them, `--skip-d2-checksum` (or
+`D2_SKIP_CHECKSUM=1`) installs the archive unchecked. A hash that does not match
+is refused even then.
 
 Upstream also publishes a `curl -fsSL https://d2lang.com/install.sh | sh -s --`
 one-liner. Neither the installer nor this documentation uses it: piping a
 downloaded script into a shell runs whatever the endpoint served that minute,
-with no chance to read it first. What `--with-d2` does instead is the same three
+with no chance to read it first. What `--with-d2` does instead is the same four
 steps you would run by hand, and you can run them by hand with `--no-d2`:
 
 ```bash
 tag=$(curl -fsSL https://api.github.com/repos/terrastruct/d2/releases/latest \
       | sed -n 's/.*"tag_name" *: *"\([^"]*\)".*/\1/p' | head -1)
-curl -fsSL -o d2.tar.gz \
-  "https://github.com/terrastruct/d2/releases/download/$tag/d2-$tag-linux-arm64.tar.gz"
-tar xzf d2.tar.gz
+base="https://github.com/terrastruct/d2/releases/download/$tag"
+curl -fsSLO "$base/d2-$tag-linux-arm64.tar.gz" -O "$base/SHA256SUMS"
+sha256sum -c --ignore-missing SHA256SUMS
+tar xzf "d2-$tag-linux-arm64.tar.gz"
 install -m 0755 "d2-$tag/bin/d2" ~/.local/bin/d2
 ```
+
+On macOS, `shasum -a 256 -c --ignore-missing SHA256SUMS` does the check.
 
 Adjust `linux-arm64` to your platform: the assets are named `linux-amd64`,
 `macos-amd64` and `macos-arm64`.
