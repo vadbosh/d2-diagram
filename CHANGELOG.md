@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.1 — 2026-10-16
+
+### Fixed
+
+- **`install.sh` deleted `CAPABILITIES.md` from every installed copy.** The
+  digest is written beside an installed skill by `skill-caps`, not by this
+  repository, and replacing the directory took it along: after the 0.4.0
+  install none of the three copies had one. The compare now ignores it, so a
+  copy that differs only by its digest counts as current, and a reinstall puts
+  it back from the backup it has just made. Two tests in `tests/test_render.sh`
+  fail against the old installer and pass against this one.
+
 ## 0.4.0 — 2026-10-16
 
 ### Added

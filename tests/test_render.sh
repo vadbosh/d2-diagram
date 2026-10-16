@@ -29,6 +29,28 @@ else
 	"$SRC/render.sh" --check 2>&1 | sed 's/^/     /'
 fi
 
+# 0b. install.sh keeps the CAPABILITIES.md that skill-caps writes beside an
+#     installed skill: a copy that differs only by it is current, and a
+#     reinstall puts it back. Replacing the directory used to delete it.
+inst() { D2_SKILL_BACKUP_DIR="$WORK/bak" "$SRC/install.sh" --skills-dir "$WORK/skills" --ide claude --no-d2 >/dev/null 2>&1; }
+mkdir -p "$WORK/skills"
+inst
+echo digest > "$WORK/skills/d2-diagram/CAPABILITIES.md"
+if D2_SKILL_BACKUP_DIR="$WORK/bak" "$SRC/install.sh" --skills-dir "$WORK/skills" --ide claude --no-d2 2>&1 |
+	grep -q 'already had the current skill'; then
+	ok "install: the digest alone does not make a copy stale"
+else
+	no "install: the digest alone does not make a copy stale"
+fi
+echo edited >> "$WORK/skills/d2-diagram/SKILL.md"
+inst
+if [ "$(cat "$WORK/skills/d2-diagram/CAPABILITIES.md" 2>/dev/null)" = digest ] &&
+   cmp -s "$SRC/skill/SKILL.md" "$WORK/skills/d2-diagram/SKILL.md"; then
+	ok "install: a reinstall keeps CAPABILITIES.md"
+else
+	no "install: a reinstall keeps CAPABILITIES.md"
+fi
+
 if ! command -v d2 >/dev/null 2>&1; then
 	printf '\nd2 not on PATH — skipping the render suite (%s passed so far)\n' "$PASS"
 	[ "$FAIL" -eq 0 ]

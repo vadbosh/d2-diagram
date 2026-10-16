@@ -79,15 +79,19 @@ skills_dir_for() {
 	esac
 }
 
+# CAPABILITIES.md beside an installed skill is written by skill-caps, not by
+# this repository: it is neither compared nor lost when the skill is replaced.
+DIGEST=CAPABILITIES.md
+
 dirs_differ() {
 	# Returns 0 when the installed copy differs from the source.
 	local src="$1" dst="$2"
 	[ -d "$dst" ] || return 0
-	! diff -r -q "$src" "$dst" >/dev/null 2>&1
+	! diff -r -q -x "$DIGEST" "$src" "$dst" >/dev/null 2>&1
 }
 
 install_into() {
-	local ide="$1" root dst backup
+	local ide="$1" root dst backup=""
 	if [ -n "$SKILLS_DIR" ]; then
 		root="$SKILLS_DIR"
 	else
@@ -121,6 +125,11 @@ install_into() {
 	say "[$ide] installing into $dst"
 	run mkdir -p "$dst"
 	run cp -a "$SKILL_SRC/." "$dst/"
+	# The digest describes the previous SKILL.md until skill-caps rewrites it;
+	# a stale digest is still better than none.
+	if [ -n "${backup:-}" ] && [ -f "$backup/$DIGEST" ]; then
+		run cp -a "$backup/$DIGEST" "$dst/$DIGEST"
+	fi
 	INSTALLED=$((INSTALLED + 1))
 }
 
