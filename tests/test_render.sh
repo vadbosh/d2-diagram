@@ -51,6 +51,26 @@ else
 	no "install: a reinstall keeps CAPABILITIES.md"
 fi
 
+# 0c. The same for agents/openai.yaml, where myskill keeps Codex's manual mode:
+#     replacing the directory dropped it until the next session start.
+rm -f "$WORK/skills/d2-diagram/CAPABILITIES.md"
+mkdir -p "$WORK/skills/d2-diagram/agents"
+echo manual > "$WORK/skills/d2-diagram/agents/openai.yaml"
+if D2_SKILL_BACKUP_DIR="$WORK/bak" "$SRC/install.sh" --skills-dir "$WORK/skills" --ide claude --no-d2 2>&1 |
+	grep -q 'already had the current skill'; then
+	ok "install: agents/openai.yaml alone does not make a copy stale"
+else
+	no "install: agents/openai.yaml alone does not make a copy stale"
+fi
+echo edited >> "$WORK/skills/d2-diagram/SKILL.md"
+inst
+if [ "$(cat "$WORK/skills/d2-diagram/agents/openai.yaml" 2>/dev/null)" = manual ] &&
+   cmp -s "$SRC/skill/SKILL.md" "$WORK/skills/d2-diagram/SKILL.md"; then
+	ok "install: a reinstall keeps agents/openai.yaml"
+else
+	no "install: a reinstall keeps agents/openai.yaml"
+fi
+
 if ! command -v d2 >/dev/null 2>&1; then
 	printf '\nd2 not on PATH — skipping the render suite (%s passed so far)\n' "$PASS"
 	[ "$FAIL" -eq 0 ]

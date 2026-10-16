@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.3 — 2026-10-16
+
+### Fixed
+
+- **`install.sh` deleted `agents/openai.yaml` from the installed Codex copy.**
+  `myskill` writes this file to keep a skill in manual mode in Codex: hidden
+  from the model, called only as `$d2-diagram`. Replacing the directory took
+  the file along. Until the next session start put it back, Codex could load
+  the skill on its own. The installer now treats the file like
+  `CAPABILITIES.md`: the compare ignores it, and a reinstall copies it back
+  from the backup. Two tests in `tests/test_render.sh` fail against the old
+  installer and pass against this one.
+
 ## 0.4.2 — 2026-10-16
 
 ### Fixed
