@@ -3,7 +3,7 @@ name: d2-diagram
 description: Draw architecture, dependency, class, network and flow diagrams as D2 source rendered to PNG. Use when asked to draw, diagram, visualize or map anything structural — infrastructure (Terraform layers, EKS/VPC topology, Kubernetes workloads, CI pipelines, request paths) as well as code (module and import graphs, class relations, call flows, data models, state machines) — when a diagram must live in git next to the code, or when Mermaid output looks too crude for the destination. Also use to redraw an existing Mermaid or Graphviz dot source at higher quality.
 license: MIT
 metadata:
-  version: "0.4.1"
+  version: "0.4.2"
   base: adapted from github.com/fmind/dotfiles/tree/main/skills/d2 (MIT)
 ---
 
@@ -484,7 +484,7 @@ characters, so a monospace table stays lined up. ANSI colour (SGR 30-37, 90-97, 
 
 ```bash
 # run it under `script` so the tool sees a terminal and prints its colours
-CONFIG_DIR=$FIXTURE script -qc "stty cols 140; mytool list" /dev/null | tr -d '\r' \
+CONFIG_DIR=$FIXTURE script -qc "stty cols 100; mytool list" /dev/null | tr -d '\r' \
   | python3 scripts/term2d2.py 'mytool list' --dim 'Legend:' > docs/list.d2
 d2 fmt docs/list.d2 && d2 validate docs/list.d2
 d2 docs/list.d2 /tmp/list.svg
@@ -500,14 +500,14 @@ Traps, each met on a real README:
 
 - **The `sed` needs the two mono rules** on top of the usual ones. Without them librsvg sets the
   cells in its default sans, and no column lines up.
-- **Pick the column count on purpose.** A tool that wraps long cells to the window does it inside
-  `script` too; widen `stty cols` until the rows you want to show fit on one line, and keep the
-  invented text short.
-- **Size it by the width of the output, not by habit.** GitHub shrinks a picture to the README
-  column, about 880 px, and a shrunk picture is a blurred one. A narrow listing (60-80 columns)
-  reads well at the default 13 px and `-z 1.5`; a wide table (140 columns, about 1100 px at 1×)
-  shrinks by half and its text smears — there `--font-size 15` and `-z 2` keep it legible in the
-  README and sharp when clicked open.
+- **Narrow the window, not the font.** GitHub shrinks a picture to the README column, about
+  880 px, so the text a reader sees depends on how many characters a line holds, not on the font
+  size inside the PNG. Measured on one README: a 146-column table came out 2666 px wide at 15 px
+  and `-z 2`, was shown at a third of that, and could not be read; the same output in a
+  100-column window is 1898 px and its text 1.4 times larger. Keep `stty cols` at 100 or less. If
+  the tool wraps long cells at that width, that is what a narrow terminal shows — draw it so.
+- **Font size and zoom decide only the click.** `--font-size 15` with `-z 2` keeps the full-size
+  view sharp; the default 13 px at `-z 1.5` is enough for a listing of 60-80 columns.
 - **1-2 px between two colour cells.** D2 centres a label by its own metric for the monospace font
   (about 7.7 px a character at 13 px) and librsvg draws DejaVu (7.83). Invisible between words,
   just visible after a hyphen: `ingress- nginx`. Accept it; a larger `--char-width` only moves

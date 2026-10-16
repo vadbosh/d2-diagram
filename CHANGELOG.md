@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.2 — 2026-10-16
+
+### Fixed
+
+- **`SKILL.md` gave the wrong advice on the width of a terminal picture.** It
+  said to widen `stty cols` until every row fits on one line. On the
+  ide-sessions README that produced a 2666 px picture which GitHub showed at a
+  third of its size, too small to read. A 100-column window gave 1898 px and
+  text 1.4 times larger. The section now says to narrow the window, and that
+  font size and zoom only decide how sharp the picture is when clicked open.
+
 ## 0.4.1 — 2026-10-16
 
 ### Fixed
