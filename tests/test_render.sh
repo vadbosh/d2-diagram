@@ -133,5 +133,37 @@ else
 	label_checker $gallery_svgs 2>&1 | sed 's/^/     /'
 fi
 
+# 6. Terminal output as a picture. The conversion has to keep what a reader
+#    sees at once: colour, columns that line up, and labels D2 accepts. The
+#    fixture has ANSI colour, runs of spaces, a `$` and a quote.
+TERM_D2="$WORK/terminal.d2"
+if python3 "$SRC/skill/scripts/term2d2.py" 'mytool list' --dim 'Legend:' \
+	< "$SRC/tests/fixtures/terminal.txt" > "$TERM_D2" &&
+   d2 "$TERM_D2" "$WORK/terminal.svg" >/dev/null 2>&1; then
+	ok "term2d2: the output compiles"
+else
+	no "term2d2: the output compiles"
+fi
+if grep -q '#ffd75f' "$TERM_D2" && grep -q '#9ccc65' "$TERM_D2" && grep -q 'bold: true' "$TERM_D2"; then
+	ok "term2d2: colour and bold survive"
+else
+	no "term2d2: colour and bold survive"
+fi
+# SVG collapses repeated spaces and D2 trims a label, so a label that starts
+# with a space is drawn a character too far left.
+if grep -Eq ": ' +[^ ']" "$TERM_D2"; then
+	no "term2d2: no label starts with a space"
+else
+	ok "term2d2: no label starts with a space"
+fi
+# NOTE starts at character 18 in the header and in the coloured row alike, so
+# the first two cells of both rows must be equally wide.
+first_two() { awk -v l="$1" '$0 ~ ": .'"'"'?" l {f=1} f && /^ *width:/ {s += $2; if (++n == 2) {print s; exit}}' "$TERM_D2"; }
+if [ -n "$(first_two NAME)" ] && [ "$(first_two NAME)" = "$(first_two alpha)" ]; then
+	ok "term2d2: the columns line up"
+else
+	no "term2d2: the columns line up ($(first_two NAME) vs $(first_two alpha))"
+fi
+
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

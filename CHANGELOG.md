@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.0 — 2026-10-16
+
+### Added
+
+- **Terminal output as a picture: `scripts/term2d2.py` and a section in
+  `SKILL.md`.** A README screenshot of a CLI is drawn from the tool's real
+  output over invented data instead of a screen capture, which shows the
+  machine's own paths and hosts. The script turns the text — ANSI colour and
+  bold included — into a D2 grid styled as a dark terminal; `--dim` greys out
+  legend lines, `--font-size` scales it. A row is cut at runs of spaces and at
+  colour changes, and no cell starts with a space, because SVG collapses
+  repeated spaces and D2 trims a label: without that the columns drift. Four
+  new tests in `tests/test_render.sh`; the two on spaces and columns fail
+  against a converter that keeps leading spaces. Used for the README pictures
+  of ide-sessions 0.15.3.
+
 ## 0.3.8 — 2026-10-09
 
 ### Security

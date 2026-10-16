@@ -329,6 +329,11 @@ came out of things that went wrong:
 - **Where the edges come from.** Extract them — from `terraform_remote_state`
   blocks, from `madge`, from `pyreverse` — rather than recalling what imports
   what. A hand-drawn dependency graph is wrong the day someone adds an import.
+- **Terminal output as a picture.** `scripts/term2d2.py` turns the real output
+  of a command — run over invented data, colours included — into a D2 grid
+  drawn as a dark terminal window. A README gets a screenshot that shows no path
+  or host of the machine it was made on, and that changes only when the output
+  does.
 - **An honest boundary.** D2 cannot draw a Venn diagram, a pyramid, a radar or
   anything where meaning lives in a coordinate or an area. The skill says so and
   names what to use instead, so nobody spends an hour bending it into a funnel.

@@ -3,7 +3,7 @@ name: d2-diagram
 description: Draw architecture, dependency, class, network and flow diagrams as D2 source rendered to PNG. Use when asked to draw, diagram, visualize or map anything structural — infrastructure (Terraform layers, EKS/VPC topology, Kubernetes workloads, CI pipelines, request paths) as well as code (module and import graphs, class relations, call flows, data models, state machines) — when a diagram must live in git next to the code, or when Mermaid output looks too crude for the destination. Also use to redraw an existing Mermaid or Graphviz dot source at higher quality.
 license: MIT
 metadata:
-  version: "0.3.8"
+  version: "0.4.0"
   base: adapted from github.com/fmind/dotfiles/tree/main/skills/d2 (MIT)
 ---
 
@@ -469,3 +469,51 @@ One container per Terraform root, leaf nodes for the 3-5 things it owns, edges f
 
 A worked example against a real layered EKS stack is in
 [`references/example-terraform-layers.d2`](references/example-terraform-layers.d2).
+
+## Terminal output as a picture
+
+A README screenshot of a CLI — a table, colours, a highlighted match — drawn as a dark terminal
+window. Not a screen capture: a capture shows the paths, hosts and data of the machine it was taken
+on. Run the tool over **invented data** (a temporary `HOME` or config directory) and draw its real
+output. The picture then changes only when the output does, and the `.d2` diff shows how.
+
+`scripts/term2d2.py` does the conversion. One grid row per line; a row is cut into cells at every
+run of two or more spaces and at every colour change, and each cell is exactly as wide as its
+characters, so a monospace table stays lined up. ANSI colour (SGR 30-37, 90-97, bold) survives;
+`--dim PREFIX` greys out legend or footer lines.
+
+```bash
+# run it under `script` so the tool sees a terminal and prints its colours
+CONFIG_DIR=$FIXTURE script -qc "stty cols 140; mytool list" /dev/null | tr -d '\r' \
+  | python3 scripts/term2d2.py 'mytool list' --dim 'Legend:' > docs/list.d2
+d2 fmt docs/list.d2 && d2 validate docs/list.d2
+d2 docs/list.d2 /tmp/list.svg
+sed -E \
+  -e 's/font-family: "d2-[0-9]+-font-mono-bold"/font-family: "DejaVu Sans Mono"; font-weight: 700/' \
+  -e 's/font-family: "d2-[0-9]+-font-mono"/font-family: "DejaVu Sans Mono"/' \
+  -e 's/font-family: "d2-[0-9]+-font-bold"/font-family: "Source Sans 3"; font-weight: 700/' \
+  /tmp/list.svg > /tmp/list.fixed.svg
+rsvg-convert -z 1.5 /tmp/list.fixed.svg -o docs/list.png
+```
+
+Traps, each met on a real README:
+
+- **The `sed` needs the two mono rules** on top of the usual ones. Without them librsvg sets the
+  cells in its default sans, and no column lines up.
+- **Pick the column count on purpose.** A tool that wraps long cells to the window does it inside
+  `script` too; widen `stty cols` until the rows you want to show fit on one line, and keep the
+  invented text short.
+- **Size it by the width of the output, not by habit.** GitHub shrinks a picture to the README
+  column, about 880 px, and a shrunk picture is a blurred one. A narrow listing (60-80 columns)
+  reads well at the default 13 px and `-z 1.5`; a wide table (140 columns, about 1100 px at 1×)
+  shrinks by half and its text smears — there `--font-size 15` and `-z 2` keep it legible in the
+  README and sharp when clicked open.
+- **1-2 px between two colour cells.** D2 centres a label by its own metric for the monospace font
+  (about 7.7 px a character at 13 px) and librsvg draws DejaVu (7.83). Invisible between words,
+  just visible after a hyphen: `ingress- nginx`. Accept it; a larger `--char-width` only moves
+  the gap.
+- **`$` in a label starts a substitution** — the script writes single-quoted labels for that
+  reason, with `'` inside the text turned into `’`.
+
+The `.d2` and the `.png` go to the repository, as for any other diagram. The fixture and the
+command that produced the output belong in the notes that say how to redraw the picture.

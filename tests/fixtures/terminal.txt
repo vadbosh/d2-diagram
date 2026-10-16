@@ -1,0 +1,5 @@
+NAME      STATE   NOTE
+alpha     [32mon[0m      a [1;93mmatch[0m here
+beta-two  [31moff[0m     $HOME and 'quotes'
+
+Legend: on = enabled
